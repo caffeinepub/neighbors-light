@@ -1,44 +1,61 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T22:07:03.399Z",
+  "generatedAt": "2026-02-04T22:21:01.487Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 0,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-34",
-        "summary": "Redeploy the most recent build artifact/version of the application (frontend + backend canisters) without introducing new feature changes, using the existing production deployment process (including backend-first ordering as documented in frontend/DEPLOYMENT.md).",
-        "status": "missing",
+        "summary": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/DEPLOYMENT.md",
-          "frontend/scripts/redeploy_last_successful.sh",
-          "frontend/SMOKE_TESTS.md"
+          "frontend/src/components/ReferralsTab.tsx"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/components/ReferralsTab.tsx"
+        ]
       },
       {
         "id": "REQ-35",
-        "summary": "If the redeploy fails again, capture and surface the complete deployment error output (exact error text, command/step that failed, and whether it occurred during build, canister install/upgrade, or frontend asset deployment) and apply the minimal corrective change required to make the redeploy succeed, without altering product functionality.",
-        "status": "missing",
+        "summary": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/scripts/redeploy_last_successful.sh",
-          "frontend/scripts/deploy_log_capture.sh",
-          "frontend/DEPLOYMENT.md"
+          "frontend/src/utils/referralFilters.ts",
+          "frontend/src/components/ReferralsTab.tsx"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/utils/referralFilters.ts",
+          "frontend/src/components/ReferralsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-36",
+        "summary": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/referralFilters.ts",
+          "frontend/src/components/ReferralsTab.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/referralFilters.ts",
+          "frontend/src/components/ReferralsTab.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/components/ReferralsTab.tsx",
+    "frontend/src/utils/referralFilters.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

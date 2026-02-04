@@ -1,56 +1,68 @@
 {
   "kind": "build_request",
-  "title": "Redeploy the last successful build",
-  "priority": "high",
+  "title": "Add status, program, and submission date range filters to Admin Referrals Data View",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-34",
-      "text": "Redeploy the most recent build artifact/version of the application (frontend + backend canisters) without introducing new feature changes, using the existing production deployment process (including backend-first ordering as documented in frontend/DEPLOYMENT.md).",
-      "target": "both",
+      "text": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-4"
         ],
         "quotes": [
-          "Redeploy the last build"
+          "Add filters to the Admin Referrals Data View:\n- Status\n- Program requested\n- Submission date range"
         ]
       },
       "acceptanceCriteria": [
-        "The backend canister is deployed successfully (no install/upgrade errors).",
-        "The frontend assets are deployed successfully and load in a browser without build/runtime errors.",
-        "After deployment, a user can log in via Internet Identity and reach the correct role-gated dashboard (Admin/Staff/Partner) consistent with existing behavior.",
-        "No new UI/feature behavior changes are introduced beyond what was already included in the last build."
+        "A user can filter referrals by Status (including an 'All' option).",
+        "A user can filter referrals by Program requested (including an 'All programs' option).",
+        "A user can filter referrals by a submission date range using start date and end date inputs.",
+        "When multiple filters are set, only referrals matching all selected filters are shown.",
+        "Changing any filter updates the list without requiring a page refresh."
       ]
     },
     {
       "id": "REQ-35",
-      "text": "If the redeploy fails again, capture and surface the complete deployment error output (exact error text, command/step that failed, and whether it occurred during build, canister install/upgrade, or frontend asset deployment) and apply the minimal corrective change required to make the redeploy succeed, without altering product functionality.",
-      "target": "unknown",
+      "text": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "Redeploy the last build"
+          "msg-4"
         ]
       },
       "acceptanceCriteria": [
-        "A full, copyable deployment error log is available for the failing step (if any failure occurs).",
-        "Any fix applied is limited to deployment/build correctness (configuration, scripts, or deterministic build issues) and does not add new product features.",
-        "A subsequent redeploy completes successfully after the fix."
+        "Program filter options reflect the data present in the fetched referrals list.",
+        "Selecting a specific program shows only referrals whose programRequested exactly matches the selected option."
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "text": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If only a start date is set, referrals submitted on/after that date are shown.",
+        "If only an end date is set, referrals submitted on/before that date are shown.",
+        "If both are set, referrals submitted between them (inclusive) are shown.",
+        "If the selected date range excludes all referrals, the UI shows the existing empty-state behavior for the filtered result."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Do not modify files under frontend/immutablePaths (compose existing UI components instead).",
-    "Respect the single-actor backend architecture (all Motoko logic in backend/main.mo); only add backend/migration.mo if an upgrade requires state migration.",
-    "Redeploy should not introduce new features or schema changes unless strictly necessary to resolve the deployment failure."
+    "Do not modify any files under frontend/src/components/ui (compose existing UI components instead).",
+    "Do not edit frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx.",
+    "Respect the single-actor backend architecture; no new backend canisters/services."
   ],
   "nonGoals": [
-    "Implementing any new features listed in project_state.json (e.g., exports, case manager assignment) as part of this redeploy request.",
-    "UI redesign or visual theme changes unrelated to deployment success.",
-    "Refactoring role systems or addressing known issues unless they are the direct cause of the deployment failure."
+    "Do not add new backend endpoints for server-side referral filtering as part of this change.",
+    "Do not change the referral status workflow or existing referral data schema.",
+    "Do not implement CSV export functionality as part of this request."
   ],
   "imageRequirements": {
     "required": [],

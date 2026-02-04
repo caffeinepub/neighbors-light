@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 118,
+  "projectStateVersion": 121,
   "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, and administrative access-request approval. The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
   "existing_features": [
     {
@@ -310,6 +310,30 @@
         "REQ-12"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-in-the-admin-referrals-data-view-current-referrals-queue-ui-add-filter-controls-for-1-status-2-program-requested-and-3-submission-date-range-filters-must-be-combinable-and-logic-and-must-update-the-visible-referrals-list-immediately-on-change",
+      "title": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-program-requested-filter-options-by-deriving-a-unique-sorted-list-of-programrequested-values-from-the-currently-loaded-referrals-data-and-include-an-explicit-all-programs-option",
+      "title": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-submission-date-range-filter-using-referral-createdat-as-the-submission-timestamp-with-inclusive-boundaries-for-the-selected-start-and-end-dates",
+      "title": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -437,18 +461,8 @@
     },
     {
       "id": "AR-17",
-      "summary": "Redeploy the most recent build artifact/version of the application (frontend + backend canisters) without introducing new feature changes, using the existing production deployment process (including backend-first ordering as documented in frontend/DEPLOYMENT.md).",
-      "reqIds": [
-        "REQ-34"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "If the redeploy fails again, capture and surface the complete deployment error output (exact error text, command/step that failed, and whether it occurred during build, canister install/upgrade, or frontend asset deployment) and apply the minimal corrective change required to make the redeploy succeed, without altering product functionality.",
-      "reqIds": [
-        "REQ-35"
-      ],
+      "summary": "Add filters to the Admin Referrals Data View (Status, Program Requested, and Submission Date Range).",
+      "reqIds": [],
       "status": "pending"
     }
   ],
@@ -470,8 +484,7 @@
     "assignBedToIntake does not validate that the selected bed's program matches any intake program (and no intake program exists in backend), so cross-program assignment is possible.",
     "Public createAccessRequest endpoint has no visible anti-spam/rate limiting controls.",
     "Blob storage cashier env var name appears inconsistent/typo-prone (\"CAFFFEINE_STORAGE_CASHIER_PRINCIPAL\"), which could cause runtime traps if deployment expects a different name.",
-    "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name.",
-    "Latest deployment for the Admin-only Referrals “Data View” screen failed with a deployment error; user requested to redeploy the last build."
+    "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name."
   ],
   "isFixRequest": false,
   "gameProjectType": "none",

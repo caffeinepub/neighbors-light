@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Referral, Status } from '../backend';
@@ -18,6 +19,7 @@ import StatusHistoryTimeline from './StatusHistoryTimeline';
 import { formatWaitingTime, isOverdue } from '../utils/referralWaitingTime';
 import { isReferralAtRisk, getReferralAtRiskLabel } from '../utils/atRisk';
 import { useNow } from '../hooks/useNow';
+import { getUniqueProgramOptions, applyAllFilters } from '../utils/referralFilters';
 
 interface ReferralsTabProps {
   isAdmin: boolean;
@@ -37,6 +39,9 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const { data: statusHistory = [], isLoading: historyLoading } = useGetReferralStatusHistory(selectedReferral?.id || null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterProgram, setFilterProgram] = useState<string>('all');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [isRequestInfoOpen, setIsRequestInfoOpen] = useState(false);
   const [requestInfoMessage, setRequestInfoMessage] = useState('');
 
@@ -117,6 +122,13 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     setIsEditingInternalNotes(false);
   };
 
+  const handleClearFilters = () => {
+    setFilterStatus('all');
+    setFilterProgram('all');
+    setFilterStartDate('');
+    setFilterEndDate('');
+  };
+
   const getUserName = (principalId: Principal | undefined): string => {
     if (!principalId) return 'System';
     const user = allUsers.find(([p]) => p.toString() === principalId.toString());
@@ -126,9 +138,20 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     return principalId.toString().slice(0, 8) + '...';
   };
 
-  const filteredReferrals = filterStatus === 'all' 
-    ? referrals 
-    : referrals.filter(r => r.status === filterStatus);
+  // Get unique program options from current referrals
+  const programOptions = getUniqueProgramOptions(referrals);
+
+  // Apply all filters with AND logic
+  const startDateObj = filterStartDate ? new Date(filterStartDate) : null;
+  const endDateObj = filterEndDate ? new Date(filterEndDate) : null;
+  
+  const filteredReferrals = applyAllFilters(
+    referrals,
+    filterStatus,
+    filterProgram,
+    startDateObj,
+    endDateObj
+  );
 
   const sortedReferrals = [...filteredReferrals].sort(
     (a, b) => Number(b.createdAt) - Number(a.createdAt)
@@ -143,6 +166,8 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     waitlisted: referrals.filter(r => r.status === 'waitlisted').length,
   };
 
+  const hasActiveFilters = filterStatus !== 'all' || filterProgram !== 'all' || filterStartDate || filterEndDate;
+
   return (
     <>
       <div className="space-y-4">
@@ -153,6 +178,7 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
           </div>
         </div>
 
+        {/* Status Filter Tabs */}
         <Tabs value={filterStatus} onValueChange={setFilterStatus}>
           <TabsList className="grid w-full grid-cols-6 portrait:flex portrait:flex-nowrap portrait:overflow-x-auto portrait:justify-start portrait:w-full">
             <TabsTrigger value="all" className="portrait:shrink-0 portrait:px-4 portrait:whitespace-nowrap">All ({statusCounts.all})</TabsTrigger>
@@ -164,6 +190,80 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
           </TabsList>
         </Tabs>
 
+        {/* Additional Filters */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base">Filters</CardTitle>
+              </div>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="h-8 px-2 text-xs"
+                >
+                  <X className="mr-1 h-3 w-3" />
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Program Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="program-filter" className="text-sm">Program Requested</Label>
+                <Select value={filterProgram} onValueChange={setFilterProgram}>
+                  <SelectTrigger id="program-filter">
+                    <SelectValue placeholder="All programs" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All programs</SelectItem>
+                    {programOptions.map(program => (
+                      <SelectItem key={program} value={program}>
+                        {program}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Start Date Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="start-date-filter" className="text-sm">Submitted From</Label>
+                <Input
+                  id="start-date-filter"
+                  type="date"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  max={filterEndDate || undefined}
+                />
+              </div>
+
+              {/* End Date Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="end-date-filter" className="text-sm">Submitted To</Label>
+                <Input
+                  id="end-date-filter"
+                  type="date"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  min={filterStartDate || undefined}
+                />
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Showing {sortedReferrals.length} of {referrals.length} referrals</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -173,8 +273,23 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="mb-4 h-12 w-12 text-muted-foreground" />
               <p className="text-center text-muted-foreground">
-                {filterStatus === 'all' ? 'No referrals yet.' : `No ${filterStatus} referrals.`}
+                {hasActiveFilters 
+                  ? 'No referrals match the selected filters.' 
+                  : filterStatus === 'all' 
+                    ? 'No referrals yet.' 
+                    : `No ${filterStatus} referrals.`
+                }
               </p>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="mt-4"
+                >
+                  Clear Filters
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (

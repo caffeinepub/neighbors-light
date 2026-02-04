@@ -1,58 +1,65 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend support for redeploying the last successful build (docs + scripts)",
+  "title": "Admin Referrals Queue: Add status, program, and submission date range filters",
   "requirements": [
     {
       "id": "REQ-34",
-      "summary": "Provide frontend-side deployment documentation and helper scripting to redeploy the most recent successful build using the documented backend-first production process, without introducing product changes.",
+      "summary": "Add combinable (AND) filter controls for Status, Program requested, and Submission date range in the Admin Referrals Queue UI with immediate list updates.",
       "acceptanceCriteria": [
-        "The backend canister is deployed successfully (no install/upgrade errors).",
-        "The frontend assets are deployed successfully and load in a browser without build/runtime errors.",
-        "After deployment, a user can log in via Internet Identity and reach the correct role-gated dashboard (Admin/Staff/Partner) consistent with existing behavior.",
-        "No new UI/feature behavior changes are introduced beyond what was already included in the last build."
+        "A user can filter referrals by Status (including an 'All' option).",
+        "A user can filter referrals by Program requested (including an 'All programs' option).",
+        "A user can filter referrals by a submission date range using start date and end date inputs.",
+        "When multiple filters are set, only referrals matching all selected filters are shown.",
+        "Changing any filter updates the list without requiring a page refresh."
       ],
       "file_operations": [
         {
-          "path": "frontend/DEPLOYMENT.md",
+          "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "Expand the production checklist to explicitly cover 'redeploy last successful artifact' behavior: emphasize no-code-change redeploy, reference backend-first ordering, specify how to select/reuse the last successful build output, and define the exact sequence of deploy steps and verification points (without changing application functionality)."
-        },
-        {
-          "path": "frontend/scripts/redeploy_last_successful.sh",
-          "operation": "create",
-          "description": "Add a production redeploy helper script that orchestrates the existing deployment flow with backend-first ordering and a 'no feature changes' posture (e.g., reuse prebuilt artifacts when available, avoid non-deterministic rebuild steps where possible, and clearly separate backend deploy vs frontend asset deploy)."
-        },
-        {
-          "path": "frontend/SMOKE_TESTS.md",
-          "operation": "modify",
-          "description": "Align the smoke test guide with the redeploy acceptance criteria by adding an explicit post-redeploy verification section for Internet Identity login and role-gated routing to Admin/Staff/Partner dashboards, confirming behavior matches the previous successful build."
+          "description": "Extend the existing Referrals Queue filtering to apply Status + Program requested + Submission date range with AND logic, updating the visible list immediately on control changes. Keep the current empty-state behavior when the filtered result is empty. Use existing shadcn/ui components (e.g., Select/Tabs and existing form inputs) by composing them; verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-35",
-      "summary": "If redeploy fails, ensure complete, copyable deployment error output is captured for the failing step and provide minimal deployment/build correctness fixes (scripts/docs) to make the redeploy succeed without changing product functionality.",
+      "summary": "Derive Program requested filter options from the currently loaded referrals list (unique, sorted) with an explicit 'All programs' option.",
       "acceptanceCriteria": [
-        "A full, copyable deployment error log is available for the failing step (if any failure occurs).",
-        "Any fix applied is limited to deployment/build correctness (configuration, scripts, or deterministic build issues) and does not add new product features.",
-        "A subsequent redeploy completes successfully after the fix."
+        "Program filter options reflect the data present in the fetched referrals list.",
+        "Selecting a specific program shows only referrals whose programRequested exactly matches the selected option."
       ],
       "file_operations": [
         {
-          "path": "frontend/scripts/redeploy_last_successful.sh",
-          "operation": "modify",
-          "description": "Harden the redeploy script to capture complete error output per step (build vs canister install/upgrade vs frontend asset deploy), including the exact command/step name, exit code, and full stderr/stdout, and write a timestamped log file to a dedicated local folder for easy copy/paste."
-        },
-        {
-          "path": "frontend/scripts/deploy_log_capture.sh",
+          "path": "frontend/src/utils/referralFilters.ts",
           "operation": "create",
-          "description": "Create a small shared shell helper used by redeploy tooling to standardize log capture (tee to file), step labeling, and failure reporting so the full error text is preserved for the failing command."
+          "description": "Add a small utility to derive a unique, sorted list of programRequested strings from a referrals array, and provide helpers to apply program filtering (exact match) while supporting an explicit 'All programs' state."
         },
         {
-          "path": "frontend/DEPLOYMENT.md",
+          "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "Add a 'Failure capture and escalation' section documenting where the scripts write logs, what to include when reporting failures (exact error text + step/command + classification of failure), and how to retry after applying minimal deployment/build correctness adjustments."
+          "description": "Use the referralFilters utility to compute program filter options from the currently loaded referrals, render a Program requested filter control including an 'All programs' option, and apply exact-match filtering. Compose existing shadcn/ui components; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "summary": "Implement an inclusive submission date range filter using referral.createdAt as the submission timestamp.",
+      "acceptanceCriteria": [
+        "If only a start date is set, referrals submitted on/after that date are shown.",
+        "If only an end date is set, referrals submitted on/before that date are shown.",
+        "If both are set, referrals submitted between them (inclusive) are shown.",
+        "If the selected date range excludes all referrals, the UI shows the existing empty-state behavior for the filtered result."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/referralFilters.ts",
+          "operation": "modify",
+          "description": "Add date range filtering helpers that interpret start/end date inputs as inclusive day boundaries and compare them against referral.createdAt (submission timestamp)."
+        },
+        {
+          "path": "frontend/src/components/ReferralsTab.tsx",
+          "operation": "modify",
+          "description": "Wire start date and end date inputs into the Referrals Queue filters and apply inclusive createdAt-based filtering (start-only, end-only, or both). Compose existing shadcn/ui components for the date inputs; verify the component's usage instructions before implementing."
         }
       ]
     }

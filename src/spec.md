@@ -1,10 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Redeploy the most recent successful build artifact (backend and frontend canisters) using the existing production deployment process, without introducing any new feature or UI changes.
+**Goal:** Add combinable Status, Program requested, and Submission date range filters to the Admin Referrals Data View so admins can quickly narrow the referrals queue.
 
 **Planned changes:**
-- Redeploy backend canister first, then redeploy frontend assets, following the documented deployment ordering/process.
-- If redeploy fails, capture and surface the complete error output for the failing step and apply the minimal deployment/build correctness fix required to make redeploy succeed (no product functionality changes).
+- Add filter controls to the Admin Referrals Data View for Status (with an “All” option), Program requested (with an “All programs” option), and Submission date range (start/end date inputs).
+- Implement AND-based filtering so only referrals matching all selected filters are shown, updating the visible list immediately when any filter changes.
+- Populate the Program requested filter options by deriving a unique, sorted list of `programRequested` values from the currently loaded referrals data.
+- Implement date range filtering using `referral.createdAt` as the submission timestamp with inclusive start/end boundaries and support for start-only or end-only filtering.
 
-**User-visible outcome:** The app is redeployed successfully; users can log in via Internet Identity and reach the same role-gated dashboard (Admin/Staff/Partner) as in the last successful build, with no new behavior changes.
+**User-visible outcome:** Admins can filter the referrals list by status, requested program, and/or submission date range, with results updating instantly without a page refresh.
