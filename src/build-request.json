@@ -1,0 +1,59 @@
+{
+  "kind": "build_request",
+  "title": "Redeploy the last successful build",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-34",
+      "text": "Redeploy the most recent build artifact/version of the application (frontend + backend canisters) without introducing new feature changes, using the existing production deployment process (including backend-first ordering as documented in frontend/DEPLOYMENT.md).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "Redeploy the last build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The backend canister is deployed successfully (no install/upgrade errors).",
+        "The frontend assets are deployed successfully and load in a browser without build/runtime errors.",
+        "After deployment, a user can log in via Internet Identity and reach the correct role-gated dashboard (Admin/Staff/Partner) consistent with existing behavior.",
+        "No new UI/feature behavior changes are introduced beyond what was already included in the last build."
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "text": "If the redeploy fails again, capture and surface the complete deployment error output (exact error text, command/step that failed, and whether it occurred during build, canister install/upgrade, or frontend asset deployment) and apply the minimal corrective change required to make the redeploy succeed, without altering product functionality.",
+      "target": "unknown",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "Redeploy the last build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A full, copyable deployment error log is available for the failing step (if any failure occurs).",
+        "Any fix applied is limited to deployment/build correctness (configuration, scripts, or deterministic build issues) and does not add new product features.",
+        "A subsequent redeploy completes successfully after the fix."
+      ]
+    }
+  ],
+  "constraints": [
+    "Use English for any user-facing text.",
+    "Do not modify files under frontend/immutablePaths (compose existing UI components instead).",
+    "Respect the single-actor backend architecture (all Motoko logic in backend/main.mo); only add backend/migration.mo if an upgrade requires state migration.",
+    "Redeploy should not introduce new features or schema changes unless strictly necessary to resolve the deployment failure."
+  ],
+  "nonGoals": [
+    "Implementing any new features listed in project_state.json (e.g., exports, case manager assignment) as part of this redeploy request.",
+    "UI redesign or visual theme changes unrelated to deployment success.",
+    "Refactoring role systems or addressing known issues unless they are the direct cause of the deployment failure."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

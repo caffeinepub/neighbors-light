@@ -1,0 +1,481 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 118,
+  "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, and administrative access-request approval. The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
+  "existing_features": [
+    {
+      "id": "IF-1",
+      "title": "Internet Identity authentication (login/logout + persisted identity)",
+      "synonyms": [
+        "II auth",
+        "DFINITY AuthClient login"
+      ],
+      "description": "Provides passwordless authentication through Internet Identity using an AuthClient-based React context provider, supports loading stored identities on mount, login with configurable identity provider and TTL, and logout that clears identity and error state.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "Per-identity backend actor creation with secret-based access-control initialization",
+      "synonyms": [
+        "useActor",
+        "actor bootstrap"
+      ],
+      "description": "Creates an IC canister actor configured with the current identity; on authenticated sessions it calls _initializeAccessControlWithSecret using a secret token sourced from a URL hash parameter (persisted in sessionStorage and cleared from URL). Recreates actor on identity change and invalidates/refetches all non-actor queries.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "Access control bootstrap and base role querying",
+      "synonyms": [
+        "MixinAuthorization",
+        "AccessControl"
+      ],
+      "description": "Motoko access-control layer where the first caller providing the correct admin token becomes AccessControl admin; subsequent callers become AccessControl users. Exposes getCallerUserRole, assignCallerUserRole (admin-only), and isCallerAdmin. Enforces base permissions (#admin/#user/#guest) on many endpoints.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "User profile creation and management with application roles",
+      "synonyms": [
+        "UserProfile",
+        "role assignment"
+      ],
+      "description": "Stores user profiles keyed by Principal with name/email/phone and an application-level role (Admin/Staff/PartnerAgency). Supports getCallerUserProfile, getUserProfile (self or admin), saveCallerUserProfile (preserves existing role), admin-only assignUserRole/removeUserRole, and admin-only getAllUsers. Includes initial-admin bootstrap that assigns the first non-anonymous caller a UserProfile role of Admin if none exists.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Role-based application routing and access gating",
+      "synonyms": [
+        "App.tsx routing",
+        "role-based dashboards"
+      ],
+      "description": "Routes authenticated users to AdminDashboard, StaffDashboard, or PartnerDashboard based on AccessControl userRole and UserProfile.role. Shows a forced ProfileSetupModal when no profile exists, and an AccessDeniedScreen ('Access Pending') when no application role is assigned or AccessControl returns guest.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "Profile setup modal for first-time users",
+      "synonyms": [
+        "onboarding",
+        "first-run profile"
+      ],
+      "description": "Provides a modal that requires name (email/phone optional) and saves the caller profile without assigning any role, preventing closure until completion; informs users that an admin must grant access.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "Public access request submission",
+      "synonyms": [
+        "Request Access form",
+        "createAccessRequest"
+      ],
+      "description": "Unauthenticated workflow allowing external/partner agencies to submit access requests with agency name, contact name, phone, optional email, and optional notes. Frontend includes a public form and success confirmation screen.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Admin access request review and approval (assign Partner Agency role)",
+      "synonyms": [
+        "AccessRequestsTab",
+        "approveRequest"
+      ],
+      "description": "Admin-only endpoints and UI to list pending access requests, approve a request by entering a user's Principal ID (sets request approved and assigns UserProfile.role='PartnerAgency'), and delete requests. Backend also supports rejectRequest with a rejection reason and assignUserRequest (assign a pending request to a user).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-9",
+      "title": "Referral submission and listing (staff/admin global, partner scoped)",
+      "synonyms": [
+        "referrals queue",
+        "partner referrals"
+      ],
+      "description": "Supports creating referrals (authenticated + has application role), listing all referrals (staff/admin), listing 'my referrals' (partner sees only their submissions; staff/admin see all), and retrieving a single referral with access checks based on role and submittedBy.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-10",
+      "title": "Referral status workflow with messaging and partner resubmission",
+      "synonyms": [
+        "needs info flow",
+        "request more info"
+      ],
+      "description": "Staff/Admin can update referral status (submitted/needsInfo/approved/declined/waitlisted) and can request more info, which forces status=needsInfo and stores a message. Partner agencies can edit and resubmit referrals only when status is needsInfo; resubmission sets status back to submitted.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-11",
+      "title": "Referral document upload (blob attachments)",
+      "synonyms": [
+        "uploadReferralDocuments",
+        "documents array"
+      ],
+      "description": "Allows users with access to a referral to upload documents as raw blobs; uploaded documents are appended to the referral’s documents list. Partner UI supports uploading additional documents from the referral details dialog.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-12",
+      "title": "Staff/Admin referrals queue UI with filtering and conversion to intake",
+      "synonyms": [
+        "ReferralsTab",
+        "convert referral to intake"
+      ],
+      "description": "Provides a staff/admin queue with status filter tabs and referral detail dialog. Supports inline status updates, a dedicated 'Request More Info' dialog, and conversion of approved referrals into intakes by creating an intake from referral client data.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-13",
+      "title": "Intake management (create, review, list, detail view)",
+      "synonyms": [
+        "intakes",
+        "reviewIntake"
+      ],
+      "description": "Staff/Admin can create intakes (pending), list all intakes, fetch a single intake, and review intakes (approve/reject) with reviewedBy tracking and updated timestamps. Frontend provides a grid list and a detailed view with approve/reject actions.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-14",
+      "title": "Program-based available bed lookup and intake-to-bed assignment",
+      "synonyms": [
+        "getAvailableBedsByProgram",
+        "assignBedToIntake"
+      ],
+      "description": "Backend provides an endpoint to list available (status=available, not archived) beds filtered by program. Frontend provides an 'Assign Bed' modal for approved intakes: select program, fetch available beds, and assign a selected bed to the intake (occupies bed with intake client as occupant).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-15",
+      "title": "Facility management (create + list)",
+      "synonyms": [
+        "facilities",
+        "createFacility"
+      ],
+      "description": "Admin-only creation of facilities (name/type/address/contact info) and staff/admin listing of all facilities. Frontend includes an admin FacilitiesTab to create facilities and view facility cards.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-16",
+      "title": "Bed inventory and occupancy tracking",
+      "synonyms": [
+        "beds",
+        "bed tracking"
+      ],
+      "description": "Implements bed creation (admin-only) tied to a facility and program, bed status updates, assignment to a client (staff/admin), listing all beds and active (non-archived) beds, and program-based bed lists. Includes isArchived for lifecycle management and lastUpdated timestamps.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-17",
+      "title": "Admin bed editing, archiving, deletion, and UI filtering",
+      "synonyms": [
+        "BedsTab admin controls",
+        "archiveBed/deleteBed"
+      ],
+      "description": "Admin-only UI and endpoints to update bed details (program, bed number, status, occupant, archived flag), archive beds (soft remove from active metrics), and delete archived beds. Frontend supports program filtering and toggling between active/archived beds with visual distinction for archived records.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-18",
+      "title": "Maximum active bed limit enforcement",
+      "synonyms": [
+        "MaxActiveBeds",
+        "12 bed cap"
+      ],
+      "description": "Enforces a hard cap of 12 active (non-archived) beds in the backend when creating beds; frontend mirrors this constraint in FacilitiesTab by disabling 'Add Bed' and showing explanatory alerts and validation messaging.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-19",
+      "title": "Operational overview dashboard metrics and occupancy analytics",
+      "synonyms": [
+        "DashboardOverview",
+        "stats cards"
+      ],
+      "description": "Displays key metrics for referrals, intakes, and bed occupancy using active beds only; includes program-specific breakdown (Medical Step-Down vs Workforce Housing), occupancy rate calculation, and recent referrals/pending intakes lists with loading skeletons.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-20",
+      "title": "Caffeine blob-storage operations (gateway auth, dead blob GC, cycles refill)",
+      "synonyms": [
+        "blob-storage mixin",
+        "storage maintenance"
+      ],
+      "description": "Includes a storage module and mixin that manages authorized gateway principals (pulled from a cashier canister), checks authorization for blob deletion operations, lists dead blobs, confirms deletion and triggers Motoko GC, provides cashier refill/top-up logic using cycles, and returns upload certificate metadata.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-21",
+      "title": "Theme toggle and Tailwind-based design system",
+      "synonyms": [
+        "dark mode",
+        "next-themes"
+      ],
+      "description": "Provides light/dark theme switching via next-themes, Tailwind configuration with OKLCH token-based color variables, and shared UI components (cards, dialogs, tabs, badges, etc.) used across dashboards.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-22",
+      "title": "URL hash secret parameter extraction and session persistence",
+      "synonyms": [
+        "admin token handling",
+        "urlParams utilities"
+      ],
+      "description": "Utility functions to safely read secret parameters (e.g., caffeineAdminToken) from URL hash fragments, persist to sessionStorage, and immediately remove them from the URL to reduce leakage via browser history/referrers.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-23",
+      "title": "User approval registry (backend-only)",
+      "synonyms": [
+        "approval state",
+        "UserApproval"
+      ],
+      "description": "Backend module for tracking approval status per principal (approved/rejected/pending), allowing users to request approval and admins to list/set approvals. Exposes isCallerApproved/requestApproval/setApproval/listApprovals endpoints (not visibly wired into the current frontend flows).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-24",
+      "title": "Role/authorization persistence and migration across canister upgrades",
+      "synonyms": [
+        "stable role storage",
+        "upgrade-safe authorization"
+      ],
+      "description": "Backend role-related registries (authorization/access-control, user profiles, and approval/role state as applicable) are now persisted across canister upgrades via explicit stable storage + migration logic, preventing Admin/Staff/PartnerAgency access from resetting after deployments.",
+      "reqIds": [
+        "REQ-13",
+        "REQ-14",
+        "REQ-17",
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-25",
+      "title": "Frontend role-mismatch detection with explicit misconfiguration error state",
+      "synonyms": [
+        "role drift UI",
+        "Access Pending gating fix"
+      ],
+      "description": "Frontend access gating no longer silently routes authenticated users with a valid application role into the generic \"Access Pending\" screen when backend authorization/profile role data disagrees; instead it presents a clear English misconfiguration error state and guidance to contact an administrator.",
+      "reqIds": [
+        "REQ-16",
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-26",
+      "title": "Admin Activity Log (persistent backend log + instrumentation + paginated admin UI)",
+      "synonyms": [
+        "Activity Log tab",
+        "audit log",
+        "admin activity feed"
+      ],
+      "description": "Adds a persistent Activity Log in the Motoko backend (entity + recordId + action + timestamp + caller principal), instruments key backend mutations (referrals, intakes, beds, archiving/assignment/unassignment) to append log entries, and exposes an admin-only paginated query endpoint. Frontend adds an Admin-only Activity Log tab powered by new React Query hooks, with loading/empty/error states, pagination controls, and user display that resolves principals to names via existing admin user listings (falling back to principal text).",
+      "reqIds": [
+        "REQ-1",
+        "REQ-2",
+        "REQ-3",
+        "REQ-4",
+        "REQ-5",
+        "REQ-6",
+        "REQ-7",
+        "REQ-8",
+        "REQ-9",
+        "REQ-10",
+        "REQ-11",
+        "REQ-12"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add Case Manager assignment to Intakes (required field; assignable to Staff/Admin users; show unassigned clearly; Staff filter 'My Clients')",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Make “Case Manager” a required attribute for every Intake and enforce that the assigned Case Manager is a user with role Staff or Admin.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Expose a backend query that returns the list of assignable Case Managers (Staff and Admin users) in a way that Staff can use for Intake assignment, without requiring Admin-only access.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Update the Intake creation workflow UI to include a required “Case Manager” field that only allows selecting Staff/Admin users, and ensure new Intakes are created with a Case Manager set.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Show unassigned Intakes clearly throughout the Intake list and Intake detail view (e.g., explicit “Unassigned” label/badge/visual emphasis).",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add a Staff-facing Intake filter “My Clients” that, when enabled, shows only Intakes where the current user is the assigned Case Manager.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Add Admin-only CSV data export for Referrals, Intakes, and Bed usage with date range filtering.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add Admin-only backend export endpoints that return CSV text for Referrals, Intakes, and Bed usage, each supporting an inclusive date range filter (start and end timestamps).",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Define the exported CSV schemas and filtering timestamps as follows: (1) Referrals export includes at minimum: referralId, partnerAgencyName, referrerName, clientName, programRequested, source, status, createdAt, updatedAt, submittedBy, assignedStaff, documentsCount; date filtering uses referral.createdAt. (2) Intakes export includes at minimum: intakeId, clientName, clientContactInfo, status, createdAt, updatedAt, submittedBy, reviewedBy, assignedBedId, exitDate, caseManager; date filtering uses intake.createdAt. (3) Bed usage export is derived from existing activity log entries for bed-related actions (bedAssigned, bedUnassigned, bedArchived) and includes at minimum: timestamp, action, bedId, recordId (bedId), userPrincipal; date filtering uses activityLogEntry.timestamp.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Add an Admin-only frontend 'Exports' area in the Admin Dashboard that lets an Admin choose an entity type (Referrals / Intakes / Bed usage), select a start date and end date, and download the resulting CSV file.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Add frontend React Query hooks and actor method bindings for the new export endpoints, and ensure the export feature is only visible/usable for Admin users (consistent with existing AdminDashboard gating and backend enforcement).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Add a basic Admin-only 'Export Referrals' button that downloads all referrals as a CSV (no filters; simple headers only).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add an admin-only backend method that returns a CSV export of all referrals with a single header row and one row per referral (no filters). The method must trap/deny for non-admin callers.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Define the CSV column headers for the referrals export and ensure every referral row aligns to those headers. Keep the schema minimal and limited to existing referral fields available in the backend (do not introduce new referral data fields solely for export).",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add an Admin-only UI action in the Admin Referrals area: render a button labeled \"Export Referrals\" that triggers a download of the CSV file containing all referrals.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Add the necessary frontend actor binding and a React Query hook/mutation to call the backend referrals CSV export method, and wire it to the \"Export Referrals\" button with basic error handling.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Redeploy the most recent build artifact/version of the application (frontend + backend canisters) without introducing new feature changes, using the existing production deployment process (including backend-first ordering as documented in frontend/DEPLOYMENT.md).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "If the redeploy fails again, capture and surface the complete deployment error output (exact error text, command/step that failed, and whether it occurred during build, canister install/upgrade, or frontend asset deployment) and apply the minimal corrective change required to make the redeploy succeed, without altering product functionality.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    }
+  ],
+  "architectural_notes": [
+    "Frontend uses TanStack React Query with custom hooks (useQueries.ts) for each backend operation; mutations invalidate relevant query keys to keep UI consistent.",
+    "Actor creation is encapsulated in useActor; actor is recreated per-identity and triggers global query invalidation/refetch when identity changes.",
+    "Authentication uses DFINITY Internet Identity via an AuthClient provider (InternetIdentityProvider) with persisted session identity and explicit login/logout controls.",
+    "Backend is a single Motoko actor composed via mixins: MixinAuthorization for access-control bootstrap and role querying, plus a Caffeine blob-storage mixin for blob GC and cycles refill mechanics.",
+    "Two parallel authorization concepts exist: (1) AccessControl.UserRole (#admin/#user/#guest) for basic permission gating; (2) application roles stored in UserProfile.role (Admin/Staff/PartnerAgency) for feature-level access restrictions.",
+    "Role-based routing in App.tsx gates access by requiring both a non-guest AccessControl role and a non-null UserProfile.role; otherwise users see profile setup or an access-pending screen.",
+    "Operational UIs are organized as tabbed dashboards (AdminDashboard/StaffDashboard/PartnerDashboard) with shared components and consistent loading/empty states.",
+    "Beds are modeled with program type and archived state; active-bed limits are enforced server-side (MaxActiveBeds=12) and mirrored in the UI.",
+    "Caffeine blob-storage integration exposes admin/gateway maintenance endpoints (authorized principal list refresh, dead blob listing/pruning, GC trigger) and a certificate creation helper for uploads.",
+    "Frontend template includes shadcn/ui component library sources plus custom ESLint rules (e.g., no BigInt in React Query keys; require InternetIdentityProvider) to enforce app conventions during development/build."
+  ],
+  "known_issues": [
+    "Duplicate role systems can drift: AccessControl role (#admin/#user) is distinct from UserProfile.role (Admin/Staff/PartnerAgency); App.tsx checks both, which can lead to confusing access states if one is set without the other.",
+    "Intake program selection in the UI (IntakesTab) is required but not sent to the backend; the backend Intake type does not store program, so program-based bed assignment context is not persisted.",
+    "assignBedToIntake does not validate that the selected bed's program matches any intake program (and no intake program exists in backend), so cross-program assignment is possible.",
+    "Public createAccessRequest endpoint has no visible anti-spam/rate limiting controls.",
+    "Blob storage cashier env var name appears inconsistent/typo-prone (\"CAFFFEINE_STORAGE_CASHIER_PRINCIPAL\"), which could cause runtime traps if deployment expects a different name.",
+    "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name.",
+    "Latest deployment for the Admin-only Referrals “Data View” screen failed with a deployment error; user requested to redeploy the last build."
+  ],
+  "isFixRequest": false,
+  "gameProjectType": "none",
+  "projectName": "Neighbors Light",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

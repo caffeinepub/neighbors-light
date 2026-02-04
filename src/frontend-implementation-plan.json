@@ -1,0 +1,60 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Frontend support for redeploying the last successful build (docs + scripts)",
+  "requirements": [
+    {
+      "id": "REQ-34",
+      "summary": "Provide frontend-side deployment documentation and helper scripting to redeploy the most recent successful build using the documented backend-first production process, without introducing product changes.",
+      "acceptanceCriteria": [
+        "The backend canister is deployed successfully (no install/upgrade errors).",
+        "The frontend assets are deployed successfully and load in a browser without build/runtime errors.",
+        "After deployment, a user can log in via Internet Identity and reach the correct role-gated dashboard (Admin/Staff/Partner) consistent with existing behavior.",
+        "No new UI/feature behavior changes are introduced beyond what was already included in the last build."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/DEPLOYMENT.md",
+          "operation": "modify",
+          "description": "Expand the production checklist to explicitly cover 'redeploy last successful artifact' behavior: emphasize no-code-change redeploy, reference backend-first ordering, specify how to select/reuse the last successful build output, and define the exact sequence of deploy steps and verification points (without changing application functionality)."
+        },
+        {
+          "path": "frontend/scripts/redeploy_last_successful.sh",
+          "operation": "create",
+          "description": "Add a production redeploy helper script that orchestrates the existing deployment flow with backend-first ordering and a 'no feature changes' posture (e.g., reuse prebuilt artifacts when available, avoid non-deterministic rebuild steps where possible, and clearly separate backend deploy vs frontend asset deploy)."
+        },
+        {
+          "path": "frontend/SMOKE_TESTS.md",
+          "operation": "modify",
+          "description": "Align the smoke test guide with the redeploy acceptance criteria by adding an explicit post-redeploy verification section for Internet Identity login and role-gated routing to Admin/Staff/Partner dashboards, confirming behavior matches the previous successful build."
+        }
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "summary": "If redeploy fails, ensure complete, copyable deployment error output is captured for the failing step and provide minimal deployment/build correctness fixes (scripts/docs) to make the redeploy succeed without changing product functionality.",
+      "acceptanceCriteria": [
+        "A full, copyable deployment error log is available for the failing step (if any failure occurs).",
+        "Any fix applied is limited to deployment/build correctness (configuration, scripts, or deterministic build issues) and does not add new product features.",
+        "A subsequent redeploy completes successfully after the fix."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/scripts/redeploy_last_successful.sh",
+          "operation": "modify",
+          "description": "Harden the redeploy script to capture complete error output per step (build vs canister install/upgrade vs frontend asset deploy), including the exact command/step name, exit code, and full stderr/stdout, and write a timestamped log file to a dedicated local folder for easy copy/paste."
+        },
+        {
+          "path": "frontend/scripts/deploy_log_capture.sh",
+          "operation": "create",
+          "description": "Create a small shared shell helper used by redeploy tooling to standardize log capture (tee to file), step labeling, and failure reporting so the full error text is preserved for the failing command."
+        },
+        {
+          "path": "frontend/DEPLOYMENT.md",
+          "operation": "modify",
+          "description": "Add a 'Failure capture and escalation' section documenting where the scripts write logs, what to include when reporting failures (exact error text + step/command + classification of failure), and how to retry after applying minimal deployment/build correctness adjustments."
+        }
+      ]
+    }
+  ]
+}
