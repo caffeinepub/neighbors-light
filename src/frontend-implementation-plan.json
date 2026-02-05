@@ -1,65 +1,83 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin Referrals Queue: Add status, program, and submission date range filters",
+  "title": "Display last updated by + timestamp for Referrals and Intakes (frontend)",
   "requirements": [
     {
-      "id": "REQ-34",
-      "summary": "Add combinable (AND) filter controls for Status, Program requested, and Submission date range in the Admin Referrals Queue UI with immediate list updates.",
-      "acceptanceCriteria": [
-        "A user can filter referrals by Status (including an 'All' option).",
-        "A user can filter referrals by Program requested (including an 'All programs' option).",
-        "A user can filter referrals by a submission date range using start date and end date inputs.",
-        "When multiple filters are set, only referrals matching all selected filters are shown.",
-        "Changing any filter updates the list without requiring a page refresh."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/ReferralsTab.tsx",
-          "operation": "modify",
-          "description": "Extend the existing Referrals Queue filtering to apply Status + Program requested + Submission date range with AND logic, updating the visible list immediately on control changes. Keep the current empty-state behavior when the filtered result is empty. Use existing shadcn/ui components (e.g., Select/Tabs and existing form inputs) by composing them; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-35",
-      "summary": "Derive Program requested filter options from the currently loaded referrals list (unique, sorted) with an explicit 'All programs' option.",
-      "acceptanceCriteria": [
-        "Program filter options reflect the data present in the fetched referrals list.",
-        "Selecting a specific program shows only referrals whose programRequested exactly matches the selected option."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/referralFilters.ts",
-          "operation": "create",
-          "description": "Add a small utility to derive a unique, sorted list of programRequested strings from a referrals array, and provide helpers to apply program filtering (exact match) while supporting an explicit 'All programs' state."
-        },
-        {
-          "path": "frontend/src/components/ReferralsTab.tsx",
-          "operation": "modify",
-          "description": "Use the referralFilters utility to compute program filter options from the currently loaded referrals, render a Program requested filter control including an 'All programs' option, and apply exact-match filtering. Compose existing shadcn/ui components; verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
       "id": "REQ-36",
-      "summary": "Implement an inclusive submission date range filter using referral.createdAt as the submission timestamp.",
+      "summary": "Show \"Last updated\" timestamp and \"Last updated by\" user display name in the referral detail view.",
       "acceptanceCriteria": [
-        "If only a start date is set, referrals submitted on/after that date are shown.",
-        "If only an end date is set, referrals submitted on/before that date are shown.",
-        "If both are set, referrals submitted between them (inclusive) are shown.",
-        "If the selected date range excludes all referrals, the UI shows the existing empty-state behavior for the filtered result."
+        "Opening a referral detail view shows a \"Last updated\" timestamp derived from the referral updatedAt value.",
+        "Opening a referral detail view shows \"Last updated by\" derived from the referral's last-updated-by principal, rendered via existing user lookup logic (fall back to a shortened principal string when name is unavailable, and show \"System\" when no principal exists).",
+        "All user-facing labels are in English and match the required strings."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/referralFilters.ts",
+          "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "Add date range filtering helpers that interpret start/end date inputs as inclusive day boundaries and compare them against referral.createdAt (submission timestamp)."
+          "description": "In the referral detail dialog, add UI rows labeled exactly \"Last updated\" (from selectedReferral.updatedAt) and \"Last updated by\" (from selectedReferral.lastUpdatedBy resolved to a display name with fallback to shortened principal; show \"System\" when missing). Ensure rendering is null/undefined-safe for legacy records."
+        },
+        {
+          "path": "frontend/src/utils/userDisplay.ts",
+          "operation": "create",
+          "description": "Add a shared helper to resolve a principal to a user display string using the existing all-users lookup behavior: return the matched profile name when available, otherwise a shortened principal string, and return \"System\" when the principal is null/undefined. This utility will be used by referrals and intakes to keep fallback behavior consistent."
+        }
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "summary": "Show \"Last updated\" and \"Last updated by\" in the intake detail view and in the Admin Intake Data View table.",
+      "acceptanceCriteria": [
+        "Intake detail view shows \"Last updated\" based on intake.updatedAt and \"Last updated by\" based on the intake last-updated-by principal with the same fallback behavior as in referrals.",
+        "Admin Intake Data View table includes a visible \"Last updated\" value and \"Last updated by\" value for each row (either as new columns or clearly readable row metadata).",
+        "All user-facing labels are in English and match the required strings."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/IntakesTab.tsx",
+          "operation": "modify",
+          "description": "In the intake detail view, add UI fields labeled exactly \"Last updated\" (from selectedIntake.updatedAt) and \"Last updated by\" (from selectedIntake.lastUpdatedBy resolved via shared user display helper with the same fallback behavior as referrals). Keep existing timeline info intact, but ensure the required labels are present and accurate."
+        },
+        {
+          "path": "frontend/src/components/IntakesDataViewTable.tsx",
+          "operation": "modify",
+          "description": "Update the Admin Intake Data View table to display \"Last updated\" (from intake.updatedAt) and \"Last updated by\" (from intake.lastUpdatedBy resolved via shared helper) for each row, as new visible columns. Ensure null/undefined-safe rendering for legacy records and keep labels exactly \"Last updated\" and \"Last updated by\"."
+        },
+        {
+          "path": "frontend/src/utils/userDisplay.ts",
+          "operation": "modify",
+          "description": "Extend/adjust the shared principal-to-display-name helper (if needed) to support intake contexts (same behavior as referrals), and reuse it in both intake detail and table views."
+        }
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "summary": "Update frontend canister type bindings and related TypeScript types so referrals and intakes include last-updated-by data without breaking existing usage.",
+      "acceptanceCriteria": [
+        "Frontend compiles with the updated Referral and Intake types that include the new last-updated-by field.",
+        "Existing referrals/intakes list and detail views continue to load successfully.",
+        "The UI displays last-updated information without runtime errors when the last-updated-by field is null/undefined."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Verify and, if necessary, update the generated/declared TypeScript types for Referral and Intake to include an optional lastUpdatedBy principal field that matches the backend return shape. Ensure updatedAt remains present and is typed consistently so existing queries/mutations continue compiling."
         },
         {
           "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "Wire start date and end date inputs into the Referrals Queue filters and apply inclusive createdAt-based filtering (start-only, end-only, or both). Compose existing shadcn/ui components for the date inputs; verify the component's usage instructions before implementing."
+          "description": "Adjust referral detail rendering to rely on typed fields (updatedAt, lastUpdatedBy) with optional chaining and safe fallbacks, preventing runtime errors when lastUpdatedBy is null/undefined."
+        },
+        {
+          "path": "frontend/src/components/IntakesTab.tsx",
+          "operation": "modify",
+          "description": "Adjust intake detail rendering to rely on typed fields (updatedAt, lastUpdatedBy) with optional chaining and safe fallbacks, preventing runtime errors when lastUpdatedBy is null/undefined."
+        },
+        {
+          "path": "frontend/src/components/IntakesDataViewTable.tsx",
+          "operation": "modify",
+          "description": "Ensure the Intake table view uses the typed updatedAt/lastUpdatedBy fields safely (null/undefined-safe) and continues to render without breaking existing admin data view behavior."
         }
       ]
     }

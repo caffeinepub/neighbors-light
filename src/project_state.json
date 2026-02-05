@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 121,
+  "projectStateVersion": 145,
   "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, and administrative access-request approval. The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
   "existing_features": [
     {
@@ -312,26 +312,26 @@
       "version": 1
     },
     {
-      "id": "feature-in-the-admin-referrals-data-view-current-referrals-queue-ui-add-filter-controls-for-1-status-2-program-requested-and-3-submission-date-range-filters-must-be-combinable-and-logic-and-must-update-the-visible-referrals-list-immediately-on-change",
-      "title": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
-      "reqIds": [
-        "REQ-34"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-program-requested-filter-options-by-deriving-a-unique-sorted-list-of-programrequested-values-from-the-currently-loaded-referrals-data-and-include-an-explicit-all-programs-option",
-      "title": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
-      "reqIds": [
-        "REQ-35"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-submission-date-range-filter-using-referral-createdat-as-the-submission-timestamp-with-inclusive-boundaries-for-the-selected-start-and-end-dates",
-      "title": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+      "id": "feature-in-the-frontend-referrals-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-each-referral-in-the-referral-detail-view-using-english-labels-exactly-last-updated-and-last-updated-by",
+      "title": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
       "reqIds": [
         "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-frontend-intakes-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-intakes-in-the-intake-detail-view-and-in-the-admin-data-table-view-using-english-labels-exactly-last-updated-and-last-updated-by",
+      "title": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-canister-type-bindings-and-any-related-typescript-types-so-the-new-backend-fields-required-for-last-updated-and-last-updated-by-are-available-in-components-that-render-referrals-and-intakes-without-breaking-existing-queries-mutations",
+      "title": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
+      "reqIds": [
+        "REQ-38"
       ],
       "version": 1
     }
@@ -461,8 +461,24 @@
     },
     {
       "id": "AR-17",
-      "summary": "Add filters to the Admin Referrals Data View (Status, Program Requested, and Submission Date Range).",
+      "summary": "Display “Last updated by” (user) and “Last updated” timestamp on Referral and Intake records in the UI.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
+      "reqIds": [
+        "REQ-35"
+      ],
       "status": "pending"
     }
   ],

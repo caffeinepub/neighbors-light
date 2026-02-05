@@ -85,6 +85,7 @@ export function useSaveCallerUserProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
+      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
     },
   });
 }
@@ -123,6 +124,7 @@ export function useSaveCallerPartnerAgencyProfile() {
       queryClient.invalidateQueries({ queryKey: ['currentPartnerAgencyProfile'] });
       queryClient.invalidateQueries({ queryKey: ['referrals'] });
       queryClient.invalidateQueries({ queryKey: ['myReferrals'] });
+      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
     },
   });
 }
@@ -153,6 +155,7 @@ export function useAssignUserRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allUsers'] });
       queryClient.invalidateQueries({ queryKey: ['userApprovals'] });
+      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
     },
   });
 }

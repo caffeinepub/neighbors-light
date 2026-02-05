@@ -9,6 +9,7 @@ import StaffDashboard from './pages/StaffDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
 import AccessDeniedScreen from './components/AccessDeniedScreen';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function App() {
   const { identity, loginStatus } = useInternetIdentity();
@@ -18,13 +19,29 @@ export default function App() {
     data: userProfile,
     isLoading: profileLoading,
     isFetched: profileFetched,
+    refetch: refetchProfile,
   } = useGetCallerUserProfile();
 
   const {
     data: isAdmin,
     isLoading: adminLoading,
     isFetched: adminFetched,
+    refetch: refetchAdmin,
   } = useIsAdmin();
+
+  // Trigger profile fetch immediately after authentication to ensure backend self-repair runs
+  useEffect(() => {
+    if (isAuthenticated && !profileLoading && !profileFetched) {
+      refetchProfile();
+    }
+  }, [isAuthenticated, profileLoading, profileFetched, refetchProfile]);
+
+  // After profile is fetched, ensure admin status is checked
+  useEffect(() => {
+    if (isAuthenticated && profileFetched && !adminLoading && !adminFetched) {
+      refetchAdmin();
+    }
+  }, [isAuthenticated, profileFetched, adminLoading, adminFetched, refetchAdmin]);
 
   // Show login page if not authenticated
   if (!isAuthenticated) {
@@ -37,7 +54,7 @@ export default function App() {
   }
 
   // Show loading state while fetching profile and admin status
-  if (profileLoading || adminLoading || loginStatus === 'logging-in') {
+  if (profileLoading || adminLoading || loginStatus === 'logging-in' || !profileFetched || !adminFetched) {
     return (
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <div className="flex min-h-screen items-center justify-center bg-background">

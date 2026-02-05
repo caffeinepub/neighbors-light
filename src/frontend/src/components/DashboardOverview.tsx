@@ -1,9 +1,10 @@
 import { useGetAllReferrals, useGetAllIntakes, useGetActiveBeds } from '../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, ClipboardList, BedDouble, CheckCircle2, Clock, Activity } from 'lucide-react';
+import { Users, ClipboardList, BedDouble, CheckCircle2, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Program, Status, Status__1 } from '../backend';
+import { Status, Status__1 } from '../backend';
+import AdminBedUtilizationSummary from './AdminBedUtilizationSummary';
 
 interface DashboardOverviewProps {
   isAdmin: boolean;
@@ -14,9 +15,6 @@ export default function DashboardOverview({ isAdmin }: DashboardOverviewProps) {
   const { data: intakes = [], isLoading: intakesLoading } = useGetAllIntakes();
   const { data: beds = [], isLoading: bedsLoading } = useGetActiveBeds();
 
-  const medicalStepDownBeds = beds.filter((b) => b.program === Program.medicalStepDown);
-  const workforceHousingBeds = beds.filter((b) => b.program === Program.workforceHousing);
-
   const stats = {
     totalReferrals: referrals.length,
     submittedReferrals: referrals.filter((r) => r.status === Status.submitted).length,
@@ -26,16 +24,6 @@ export default function DashboardOverview({ isAdmin }: DashboardOverviewProps) {
     totalBeds: beds.length,
     availableBeds: beds.filter((b) => b.status === Status__1.available).length,
     occupiedBeds: beds.filter((b) => b.status === Status__1.occupied).length,
-    medicalStepDown: {
-      total: medicalStepDownBeds.length,
-      available: medicalStepDownBeds.filter((b) => b.status === Status__1.available).length,
-      occupied: medicalStepDownBeds.filter((b) => b.status === Status__1.occupied).length,
-    },
-    workforceHousing: {
-      total: workforceHousingBeds.length,
-      available: workforceHousingBeds.filter((b) => b.status === Status__1.available).length,
-      occupied: workforceHousingBeds.filter((b) => b.status === Status__1.occupied).length,
-    },
   };
 
   if (referralsLoading || intakesLoading || bedsLoading) {
@@ -150,85 +138,7 @@ export default function DashboardOverview({ isAdmin }: DashboardOverviewProps) {
         </Card>
       </div>
 
-      {stats.totalBeds > 0 && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Medical Step-Down
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Active Beds</span>
-                  <span className="text-2xl font-bold">{stats.medicalStepDown.total}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Available</span>
-                  <Badge variant="default" className="text-base">
-                    {stats.medicalStepDown.available}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Occupied</span>
-                  <Badge variant="secondary" className="text-base">
-                    {stats.medicalStepDown.occupied}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Occupancy Rate</span>
-                  <span className="text-lg font-semibold">
-                    {stats.medicalStepDown.total > 0
-                      ? Math.round((stats.medicalStepDown.occupied / stats.medicalStepDown.total) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Workforce Housing
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Active Beds</span>
-                  <span className="text-2xl font-bold">{stats.workforceHousing.total}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Available</span>
-                  <Badge variant="default" className="text-base">
-                    {stats.workforceHousing.available}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Occupied</span>
-                  <Badge variant="secondary" className="text-base">
-                    {stats.workforceHousing.occupied}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Occupancy Rate</span>
-                  <span className="text-lg font-semibold">
-                    {stats.workforceHousing.total > 0
-                      ? Math.round((stats.workforceHousing.occupied / stats.workforceHousing.total) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {isAdmin && <AdminBedUtilizationSummary beds={beds} />}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

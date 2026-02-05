@@ -15,12 +15,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, ClipboardList, CheckCircle2, XCircle, Bed as BedIcon, ArrowLeft, LogOut, Lock, UserCircle, History, AlertTriangle } from 'lucide-react';
+import { Plus, Loader2, ClipboardList, CheckCircle2, XCircle, Bed as BedIcon, ArrowLeft, LogOut, Lock, UserCircle, History, AlertTriangle, Table as TableIcon, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Client, Intake, Bed, Program } from '../backend';
 import { Principal } from '@dfinity/principal';
 import StatusHistoryTimeline from './StatusHistoryTimeline';
 import { isIntakeAtRisk, getIntakeAtRiskLabel } from '../utils/atRisk';
+import IntakesDataViewTable from './IntakesDataViewTable';
+import { getUserDisplayName } from '../utils/userDisplay';
 
 interface IntakesTabProps {
   isAdmin: boolean;
@@ -37,6 +39,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
   const addInternalNotes = useAddIntakeInternalNotes();
   const assignCaseManager = useAssignCaseManager();
 
+  const [viewMode, setViewMode] = useState<'management' | 'dataView'>('management');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [clientName, setClientName] = useState('');
   const [contactInfo, setContactInfo] = useState('');
@@ -228,12 +231,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
   };
 
   const getUserName = (principalId: Principal | undefined): string => {
-    if (!principalId) return 'Not assigned';
-    const user = allUsers.find(([p]) => p.toString() === principalId.toString());
-    if (user && user[1].name) {
-      return user[1].name;
-    }
-    return principalId.toString().slice(0, 8) + '...';
+    return getUserDisplayName(principalId, allUsers);
   };
 
   const sortedIntakes = [...intakes].sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
@@ -376,6 +374,22 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
               <p className="text-sm text-muted-foreground">
                 Updated: {new Date(Number(selectedIntake.updatedAt) / 1000000).toLocaleString()}
               </p>
+            </div>
+
+            {/* Last Updated Information */}
+            <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Last updated</Label>
+                <p className="text-sm font-medium">
+                  {new Date(Number(selectedIntake.updatedAt) / 1000000).toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Last updated by</Label>
+                <p className="text-sm font-medium">
+                  {getUserName(selectedIntake.lastUpdatedBy)}
+                </p>
+              </div>
             </div>
 
             {selectedIntake.exitDate && selectedIntake.exitNotes && (
@@ -527,108 +541,130 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
           <h2 className="text-xl font-semibold">Intake Management</h2>
           <p className="text-sm text-muted-foreground">Record and review client intakes</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Intake
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Intake</DialogTitle>
-              <DialogDescription>Record a new client intake</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="clientName">
-                  Client Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="clientName"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Enter client name"
-                  required
-                />
-              </div>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              <Button
+                variant={viewMode === 'management' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('management')}
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Management
+              </Button>
+              <Button
+                variant={viewMode === 'dataView' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('dataView')}
+              >
+                <TableIcon className="mr-2 h-4 w-4" />
+                Data View
+              </Button>
+            </div>
+          )}
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Intake
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Intake</DialogTitle>
+                <DialogDescription>Record a new client intake</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="clientName">
+                    Client Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="clientName"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Enter client name"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="contactInfo">
-                  Contact Info <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="contactInfo"
-                  value={contactInfo}
-                  onChange={(e) => setContactInfo(e.target.value)}
-                  placeholder="Phone or email"
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactInfo">
+                    Contact Info <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="contactInfo"
+                    value={contactInfo}
+                    onChange={(e) => setContactInfo(e.target.value)}
+                    placeholder="Phone or email"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="program">
-                  Program <span className="text-destructive">*</span>
-                </Label>
-                <Select value={selectedProgram} onValueChange={(value) => setSelectedProgram(value as Program)}>
-                  <SelectTrigger id="program">
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="medicalStepDown">Medical Step-Down</SelectItem>
-                    <SelectItem value="workforceHousing">Workforce Housing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="program">
+                    Program <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={selectedProgram} onValueChange={(value) => setSelectedProgram(value as Program)}>
+                    <SelectTrigger id="program">
+                      <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="medicalStepDown">Medical Step-Down</SelectItem>
+                      <SelectItem value="workforceHousing">Workforce Housing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="details">
-                  Intake Details <span className="text-destructive">*</span>
-                </Label>
-                <Textarea
-                  id="details"
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Describe the intake details, needs, and assessment"
-                  rows={4}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="details">
+                    Intake Details <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="details"
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    placeholder="Describe the intake details, needs, and assessment"
+                    rows={4}
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any additional information"
-                  rows={2}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Any additional information"
+                    rows={2}
+                  />
+                </div>
 
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createIntake.isPending} className="flex-1">
-                  {createIntake.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Intake'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createIntake.isPending} className="flex-1">
+                    {createIntake.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Intake'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Dialog open={isAssignBedOpen} onOpenChange={setIsAssignBedOpen}>
@@ -795,68 +831,74 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
         </DialogContent>
       </Dialog>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : sortedIntakes.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <ClipboardList className="mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-center text-muted-foreground">
-              No intakes yet. Create your first intake to get started.
-            </p>
-          </CardContent>
-        </Card>
+      {viewMode === 'dataView' && isAdmin ? (
+        <IntakesDataViewTable />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedIntakes.map((intake) => {
-            const atRisk = isIntakeAtRisk(intake);
-            return (
-              <Card
-                key={intake.id.toString()}
-                className={`cursor-pointer hover:border-primary/50 transition-colors ${
-                  atRisk ? 'border-warning bg-warning/5' : ''
-                }`}
-                onClick={() => handleOpenIntakeDetails(intake)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        {intake.client.name}
-                        {atRisk && <AlertTriangle className="h-4 w-4 text-warning" />}
-                      </CardTitle>
-                      <CardDescription className="mt-1 text-xs">
-                        {intake.client.contactInfo}
-                      </CardDescription>
-                      {atRisk && (
-                        <Badge variant="outline" className="mt-2 border-warning text-warning">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
-                          At Risk
+        <>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : sortedIntakes.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <ClipboardList className="mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="text-center text-muted-foreground">
+                  No intakes yet. Create your first intake to get started.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedIntakes.map((intake) => {
+                const atRisk = isIntakeAtRisk(intake);
+                return (
+                  <Card
+                    key={intake.id.toString()}
+                    className={`cursor-pointer hover:border-primary/50 transition-colors ${
+                      atRisk ? 'border-warning bg-warning/5' : ''
+                    }`}
+                    onClick={() => handleOpenIntakeDetails(intake)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            {intake.client.name}
+                            {atRisk && <AlertTriangle className="h-4 w-4 text-warning" />}
+                          </CardTitle>
+                          <CardDescription className="mt-1 text-xs">
+                            {intake.client.contactInfo}
+                          </CardDescription>
+                          {atRisk && (
+                            <Badge variant="outline" className="mt-2 border-warning text-warning">
+                              <AlertTriangle className="mr-1 h-3 w-3" />
+                              At Risk
+                            </Badge>
+                          )}
+                        </div>
+                        <Badge variant={getStatusVariant(intake.status)}>
+                          {getStatusLabel(intake.status)}
                         </Badge>
-                      )}
-                    </div>
-                    <Badge variant={getStatusVariant(intake.status)}>
-                      {getStatusLabel(intake.status)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground line-clamp-2">
-                      <span className="font-medium">Details:</span> {intake.details}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium">Created:</span>{' '}
-                      {new Date(Number(intake.createdAt) / 1000000).toLocaleDateString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1 text-sm">
+                        <p className="text-muted-foreground line-clamp-2">
+                          <span className="font-medium">Details:</span> {intake.details}
+                        </p>
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">Created:</span>{' '}
+                          {new Date(Number(intake.createdAt) / 1000000).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

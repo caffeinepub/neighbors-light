@@ -2,54 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-admin-referrals-data-view-current-referrals-queue-ui-add-filter-controls-for-1-status-2-program-requested-and-3-submission-date-range-filters-must-be-combinable-and-logic-and-must-update-the-visible-referrals-list-immediately-on-change",
-      "featureTitle": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
-      "files": [
-        "frontend/src/components/ReferralsTab.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "blob-storage@4.0.0",
-        "user-approval@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-34"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-the-program-requested-filter-options-by-deriving-a-unique-sorted-list-of-programrequested-values-from-the-currently-loaded-referrals-data-and-include-an-explicit-all-programs-option",
-      "featureTitle": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
+      "featureId": "feature-in-the-frontend-referrals-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-each-referral-in-the-referral-detail-view-using-english-labels-exactly-last-updated-and-last-updated-by",
+      "featureTitle": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
       "files": [
         "frontend/src/components/ReferralsTab.tsx",
-        "frontend/src/utils/referralFilters.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "blob-storage@4.0.0",
-        "user-approval@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-35"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-the-submission-date-range-filter-using-referral-createdat-as-the-submission-timestamp-with-inclusive-boundaries-for-the-selected-start-and-end-dates",
-      "featureTitle": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
-      "files": [
-        "frontend/src/components/ReferralsTab.tsx",
-        "frontend/src/utils/referralFilters.ts"
+        "frontend/src/utils/userDisplay.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -63,6 +20,52 @@
       ],
       "testIds": [
         "REQ-36"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-frontend-intakes-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-intakes-in-the-intake-detail-view-and-in-the-admin-data-table-view-using-english-labels-exactly-last-updated-and-last-updated-by",
+      "featureTitle": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "files": [
+        "frontend/src/components/IntakesDataViewTable.tsx",
+        "frontend/src/components/IntakesTab.tsx",
+        "frontend/src/utils/userDisplay.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "user-approval@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-37"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-frontend-canister-type-bindings-and-any-related-typescript-types-so-the-new-backend-fields-required-for-last-updated-and-last-updated-by-are-available-in-components-that-render-referrals-and-intakes-without-breaking-existing-queries-mutations",
+      "featureTitle": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
+      "files": [
+        "frontend/src/components/IntakesDataViewTable.tsx",
+        "frontend/src/components/IntakesTab.tsx",
+        "frontend/src/components/ReferralsTab.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "user-approval@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-38"
       ],
       "confidence": "high"
     }

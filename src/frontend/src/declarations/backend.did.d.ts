@@ -83,6 +83,7 @@ export interface Intake {
   'submittedBy' : Principal,
   'statusHistory' : Array<IntakeStatusHistoryEntry>,
   'reviewedBy' : [] | [Principal],
+  'lastUpdatedBy' : [] | [Principal],
   'updatedAt' : Time,
   'details' : string,
   'exitNotes' : [] | [string],
@@ -115,6 +116,7 @@ export interface Referral {
   'createdAt' : Time,
   'submittedBy' : [] | [Principal],
   'statusHistory' : Array<StatusHistoryEntry>,
+  'lastUpdatedBy' : [] | [Principal],
   'updatedAt' : Time,
   'assignedStaff' : [] | [Principal],
   'programRequested' : string,
@@ -201,7 +203,6 @@ export interface _SERVICE {
   >,
   'deleteBed' : ActorMethod<[bigint], undefined>,
   'deleteRequest' : ActorMethod<[bigint], undefined>,
-  'ensureAdminRole' : ActorMethod<[], undefined>,
   'getActiveBeds' : ActorMethod<[], Array<Bed>>,
   'getActivityLogEntries' : ActorMethod<
     [bigint, bigint],

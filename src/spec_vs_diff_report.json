@@ -1,24 +1,63 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T22:21:01.448Z",
-  "summary": "The diff adds a dedicated referral filtering utility (status + program + submission date range with AND logic and inclusive date boundaries) and begins integrating it into the ReferralsTab via new filter state and imports. Based on the truncated ReferralsTab diff, the core filtering logic is implemented, but the UI wiring (rendering the controls, applying filtered results to the displayed list, and ensuring the explicit 'All programs' option is shown) cannot be fully confirmed from the provided snippet.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-05T04:12:04.779Z",
+  "summary": "Diff adds lastUpdatedBy fields to backend Referral/Intake types and introduces a migration module initializing lastUpdatedBy to null for existing records. Frontend adds a user-display helper and updates the Intakes admin data table headers to include Last updated/Last updated by. Evidence for updating all backend mutation paths, ensuring updatedAt alignment, and updating frontend type bindings is not present in the provided diff summary.",
+  "missing_requirements": [
     {
-      "description": "Clear-filters functionality (e.g., reset all filters) in the ReferralsTab",
-      "reason": "Not requested in REQ-34/35/36; the diff summary text suggests this was added alongside the new filters, but it is not part of the stated requirements.",
+      "id": "REQ-34",
+      "requirement": "Update \"last updated by\" on every backend mutation that changes a Referral or Intake record (status changes, edits/resubmissions, internal notes, document uploads; intake reviews, case manager assignment, bed assignment, marking exited), and ensure bed assignment updates updatedAt + lastUpdatedBy.",
+      "reason": "The diff shows the new lastUpdatedBy field added to the Referral/Intake record types and a migration initializing it to null, but does not show any of the listed mutation functions being updated to set lastUpdatedBy = caller or to fix bed assignment updating updatedAt.",
       "evidence": [
-        "frontend/src/components/ReferralsTab.tsx (imports lucide-react icons: Filter, X)",
-        "frontend-file-summaries.txt (ReferralsTab description mentions \"clear filters functionality\")"
+        "backend/main.mo",
+        "backend/migration.mo"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "requirement": "Ensure updatedAt is set to the current time across the same set of mutations listed in REQ-34 so it matches the lastUpdatedBy value.",
+      "reason": "No specific mutation-path changes are shown in the diff summary demonstrating updatedAt being set during each mutation, including the bed assignment path called out as currently not updating updatedAt.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "requirement": "Update frontend canister type bindings and related TypeScript types so Referral/Intake include the new last-updated-by field without breaking existing queries/mutations.",
+      "reason": "The diff shows components importing types from '../backend' and using fields, but does not show any changes to the generated/declared backend type bindings file(s) (e.g., candid/TS bindings) to actually add lastUpdatedBy to the Referral/Intake types.",
+      "evidence": [
+        "frontend/src/components/IntakesDataViewTable.tsx",
+        "frontend/src/components/IntakesTab.tsx",
+        "frontend/src/components/ReferralsTab.tsx"
       ]
     }
   ],
-  "confidence": 0.6,
+  "hallucinated_features": [
+    {
+      "description": "Added a dedicated backend migration module/file to transform stored records and add lastUpdatedBy with null defaults.",
+      "reason": "The BuildRequest did not request adding a separate migration module/file; it only requested persisting and exposing last-updated metadata. This may be an implementation detail, but it is still an extra feature/artifact not explicitly requested and may conflict with the constraint to keep all backend logic in backend/main.mo.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Added a new frontend utility helper for resolving a principal to a display name with fallback logic.",
+      "reason": "The BuildRequest specified fallback behavior for display, but did not request adding a new shared utility module; this is additional structure beyond the stated requirements.",
+      "evidence": [
+        "frontend/src/utils/userDisplay.ts"
+      ]
+    }
+  ],
+  "confidence": 0.58,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/IntakesDataViewTable.tsx",
+    "frontend/src/components/IntakesTab.tsx",
     "frontend/src/components/ReferralsTab.tsx",
-    "frontend/src/utils/referralFilters.ts",
+    "frontend/src/utils/userDisplay.ts",
     "project_state.json"
   ]
 }

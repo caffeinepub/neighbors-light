@@ -1,68 +1,108 @@
 {
   "kind": "build_request",
-  "title": "Add status, program, and submission date range filters to Admin Referrals Data View",
+  "title": "Show last updated user + timestamp for Referrals and Intakes",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-34",
-      "text": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
+      "text": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Display “Last updated by” and timestamp on Referrals and Intakes."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Referral records returned by backend queries include a field representing the principal who last updated the referral (nullable for legacy/system cases).",
+        "Intake records returned by backend queries include a field representing the principal who last updated the intake (nullable for legacy/system cases).",
+        "Each of the listed mutation paths sets the \"last updated by\" field to the current caller principal when it updates the record.",
+        "Bed assignment to an intake updates the intake's updatedAt timestamp and last-updated-by field (currently it does not update updatedAt)."
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "text": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Display “Last updated by” and timestamp on Referrals and Intakes."
+        ]
+      },
+      "acceptanceCriteria": [
+        "For each record mutation listed in REQ-34, the stored updatedAt is set to the current time when the record is modified.",
+        "Calling the relevant list/detail queries after an update returns updatedAt reflecting that update."
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "text": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Add filters to the Admin Referrals Data View:\n- Status\n- Program requested\n- Submission date range"
+          "Display “Last updated by” and timestamp on Referrals and Intakes."
         ]
       },
       "acceptanceCriteria": [
-        "A user can filter referrals by Status (including an 'All' option).",
-        "A user can filter referrals by Program requested (including an 'All programs' option).",
-        "A user can filter referrals by a submission date range using start date and end date inputs.",
-        "When multiple filters are set, only referrals matching all selected filters are shown.",
-        "Changing any filter updates the list without requiring a page refresh."
+        "Opening a referral detail view shows a \"Last updated\" timestamp derived from the referral updatedAt value.",
+        "Opening a referral detail view shows \"Last updated by\" derived from the referral's last-updated-by principal, rendered via existing user lookup logic (fall back to a shortened principal string when name is unavailable, and show \"System\" when no principal exists).",
+        "All user-facing labels are in English and match the required strings."
       ]
     },
     {
-      "id": "REQ-35",
-      "text": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
+      "id": "REQ-37",
+      "text": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
+        ],
+        "quotes": [
+          "Display “Last updated by” and timestamp on Referrals and Intakes."
         ]
       },
       "acceptanceCriteria": [
-        "Program filter options reflect the data present in the fetched referrals list.",
-        "Selecting a specific program shows only referrals whose programRequested exactly matches the selected option."
+        "Intake detail view shows \"Last updated\" based on intake.updatedAt and \"Last updated by\" based on the intake last-updated-by principal with the same fallback behavior as in referrals.",
+        "Admin Intake Data View table includes a visible \"Last updated\" value and \"Last updated by\" value for each row (either as new columns or clearly readable row metadata).",
+        "All user-facing labels are in English and match the required strings."
       ]
     },
     {
-      "id": "REQ-36",
-      "text": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+      "id": "REQ-38",
+      "text": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
+        ],
+        "quotes": [
+          "Display “Last updated by” and timestamp on Referrals and Intakes."
         ]
       },
       "acceptanceCriteria": [
-        "If only a start date is set, referrals submitted on/after that date are shown.",
-        "If only an end date is set, referrals submitted on/before that date are shown.",
-        "If both are set, referrals submitted between them (inclusive) are shown.",
-        "If the selected date range excludes all referrals, the UI shows the existing empty-state behavior for the filtered result."
+        "Frontend compiles with the updated Referral and Intake types that include the new last-updated-by field.",
+        "Existing referrals/intakes list and detail views continue to load successfully.",
+        "The UI displays last-updated information without runtime errors when the last-updated-by field is null/undefined."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui (compose existing UI components instead).",
-    "Do not edit frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, or frontend/src/main.tsx.",
-    "Respect the single-actor backend architecture; no new backend canisters/services."
+    "Backend must remain a single-actor Motoko canister with all logic in backend/main.mo.",
+    "Do not edit any files under frontend/src/components/ui or the immutable frontend hook paths listed in SYSTEM_CONTEXT.",
+    "Use English for all user-facing text, and use labels exactly \"Last updated\" and \"Last updated by\" where specified."
   ],
   "nonGoals": [
-    "Do not add new backend endpoints for server-side referral filtering as part of this change.",
-    "Do not change the referral status workflow or existing referral data schema.",
-    "Do not implement CSV export functionality as part of this request."
+    "Do not introduce third-party authentication or external databases.",
+    "Do not add new workflow steps or status changes beyond capturing and displaying last-update metadata.",
+    "Do not redesign the Referrals/Intakes information architecture beyond adding the requested fields."
   ],
   "imageRequirements": {
     "required": [],

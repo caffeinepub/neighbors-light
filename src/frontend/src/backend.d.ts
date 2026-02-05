@@ -47,6 +47,7 @@ export interface Intake {
     submittedBy: Principal;
     statusHistory: Array<IntakeStatusHistoryEntry>;
     reviewedBy?: Principal;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     details: string;
     exitNotes?: string;
@@ -97,6 +98,7 @@ export interface Referral {
     createdAt: Time;
     submittedBy?: Principal;
     statusHistory: Array<StatusHistoryEntry>;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
     programRequested: string;
@@ -177,7 +179,6 @@ export interface backendInterface {
     createReferral(referrerName: string, clientName: string, reason: string, programRequested: string, client: Client, source: string): Promise<bigint>;
     deleteBed(bedId: bigint): Promise<void>;
     deleteRequest(requestId: bigint): Promise<void>;
-    ensureAdminRole(): Promise<void>;
     getActiveBeds(): Promise<Array<Bed>>;
     getActivityLogEntries(limit: bigint, offset: bigint): Promise<Array<ActivityLogEntry>>;
     getAdminStatusCheck(): Promise<AdminStatusInfo>;

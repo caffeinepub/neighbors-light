@@ -136,6 +136,7 @@ export interface Intake {
     submittedBy: Principal;
     statusHistory: Array<IntakeStatusHistoryEntry>;
     reviewedBy?: Principal;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     details: string;
     exitNotes?: string;
@@ -186,6 +187,7 @@ export interface Referral {
     createdAt: Time;
     submittedBy?: Principal;
     statusHistory: Array<StatusHistoryEntry>;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
     programRequested: string;
@@ -277,7 +279,6 @@ export interface backendInterface {
     createReferral(referrerName: string, clientName: string, reason: string, programRequested: string, client: Client, source: string): Promise<bigint>;
     deleteBed(bedId: bigint): Promise<void>;
     deleteRequest(requestId: bigint): Promise<void>;
-    ensureAdminRole(): Promise<void>;
     getActiveBeds(): Promise<Array<Bed>>;
     getActivityLogEntries(limit: bigint, offset: bigint): Promise<Array<ActivityLogEntry>>;
     getAdminStatusCheck(): Promise<AdminStatusInfo>;
@@ -673,20 +674,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteRequest(arg0);
-            return result;
-        }
-    }
-    async ensureAdminRole(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.ensureAdminRole();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.ensureAdminRole();
             return result;
         }
     }
@@ -1478,6 +1465,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
     createdAt: _Time;
     submittedBy: [] | [Principal];
     statusHistory: Array<_StatusHistoryEntry>;
+    lastUpdatedBy: [] | [Principal];
     updatedAt: _Time;
     assignedStaff: [] | [Principal];
     programRequested: string;
@@ -1496,6 +1484,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
     createdAt: Time;
     submittedBy?: Principal;
     statusHistory: Array<StatusHistoryEntry>;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
     programRequested: string;
@@ -1515,6 +1504,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
         createdAt: value.createdAt,
         submittedBy: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.submittedBy)),
         statusHistory: from_candid_vec_n47(_uploadFile, _downloadFile, value.statusHistory),
+        lastUpdatedBy: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.lastUpdatedBy)),
         updatedAt: value.updatedAt,
         assignedStaff: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.assignedStaff)),
         programRequested: value.programRequested,
@@ -1631,6 +1621,7 @@ function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint
     submittedBy: Principal;
     statusHistory: Array<_IntakeStatusHistoryEntry>;
     reviewedBy: [] | [Principal];
+    lastUpdatedBy: [] | [Principal];
     updatedAt: _Time;
     details: string;
     exitNotes: [] | [string];
@@ -1646,6 +1637,7 @@ function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint
     submittedBy: Principal;
     statusHistory: Array<IntakeStatusHistoryEntry>;
     reviewedBy?: Principal;
+    lastUpdatedBy?: Principal;
     updatedAt: Time;
     details: string;
     exitNotes?: string;
@@ -1662,6 +1654,7 @@ function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint
         submittedBy: value.submittedBy,
         statusHistory: from_candid_vec_n14(_uploadFile, _downloadFile, value.statusHistory),
         reviewedBy: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.reviewedBy)),
+        lastUpdatedBy: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.lastUpdatedBy)),
         updatedAt: value.updatedAt,
         details: value.details,
         exitNotes: record_opt_to_undefined(from_candid_opt_n13(_uploadFile, _downloadFile, value.exitNotes)),

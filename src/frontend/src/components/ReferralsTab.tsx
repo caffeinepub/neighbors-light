@@ -9,17 +9,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X } from 'lucide-react';
+import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Referral, Status } from '../backend';
 import type { Principal } from '@dfinity/principal';
 import ReferralStatusBadge from './ReferralStatusBadge';
 import StatusHistoryTimeline from './StatusHistoryTimeline';
+import ReferralCountsSummary from './ReferralCountsSummary';
 import { formatWaitingTime, isOverdue } from '../utils/referralWaitingTime';
 import { isReferralAtRisk, getReferralAtRiskLabel } from '../utils/atRisk';
 import { useNow } from '../hooks/useNow';
 import { getUniqueProgramOptions, applyAllFilters } from '../utils/referralFilters';
+import { sortReferrals, type SortMode } from '../utils/referralSort';
+import { getUserDisplayName } from '../utils/userDisplay';
 
 interface ReferralsTabProps {
   isAdmin: boolean;
@@ -42,6 +45,7 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
   const [filterProgram, setFilterProgram] = useState<string>('all');
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [sortMode, setSortMode] = useState<SortMode>('submissionDate');
   const [isRequestInfoOpen, setIsRequestInfoOpen] = useState(false);
   const [requestInfoMessage, setRequestInfoMessage] = useState('');
 
@@ -130,12 +134,7 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
   };
 
   const getUserName = (principalId: Principal | undefined): string => {
-    if (!principalId) return 'System';
-    const user = allUsers.find(([p]) => p.toString() === principalId.toString());
-    if (user && user[1].name) {
-      return user[1].name;
-    }
-    return principalId.toString().slice(0, 8) + '...';
+    return getUserDisplayName(principalId, allUsers);
   };
 
   // Get unique program options from current referrals
@@ -153,9 +152,8 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     endDateObj
   );
 
-  const sortedReferrals = [...filteredReferrals].sort(
-    (a, b) => Number(b.createdAt) - Number(a.createdAt)
-  );
+  // Apply sorting to filtered referrals
+  const sortedReferrals = sortReferrals(filteredReferrals, sortMode);
 
   const statusCounts = {
     all: referrals.length,
@@ -178,6 +176,9 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
           </div>
         </div>
 
+        {/* Referral Counts Summary */}
+        <ReferralCountsSummary referrals={referrals} />
+
         {/* Status Filter Tabs */}
         <Tabs value={filterStatus} onValueChange={setFilterStatus}>
           <TabsList className="grid w-full grid-cols-6 portrait:flex portrait:flex-nowrap portrait:overflow-x-auto portrait:justify-start portrait:w-full">
@@ -190,13 +191,13 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
           </TabsList>
         </Tabs>
 
-        {/* Additional Filters */}
+        {/* Filters and Sort */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base">Filters</CardTitle>
+                <CardTitle className="text-base">Filters & Sort</CardTitle>
               </div>
               {hasActiveFilters && (
                 <Button
@@ -212,7 +213,24 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-4">
+              {/* Sort Control */}
+              <div className="space-y-2">
+                <Label htmlFor="sort-mode" className="text-sm flex items-center gap-1">
+                  <ArrowUpDown className="h-3.5 w-3.5" />
+                  Sort By
+                </Label>
+                <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
+                  <SelectTrigger id="sort-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="submissionDate">Submission Date</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Program Filter */}
               <div className="space-y-2">
                 <Label htmlFor="program-filter" className="text-sm">Program Requested</Label>
@@ -434,6 +452,22 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
                   </AlertDescription>
                 </Alert>
               )}
+
+              {/* Last Updated Information */}
+              <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Last updated</Label>
+                  <p className="text-sm font-medium">
+                    {new Date(Number(selectedReferral.updatedAt) / 1000000).toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Last updated by</Label>
+                  <p className="text-sm font-medium">
+                    {getUserName(selectedReferral.lastUpdatedBy)}
+                  </p>
+                </div>
+              </div>
 
               <div className="space-y-2 pt-4 border-t">
                 <div className="flex items-center gap-2">

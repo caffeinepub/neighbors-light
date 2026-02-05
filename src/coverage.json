@@ -1,61 +1,91 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T22:21:01.487Z",
+  "generatedAt": "2026-02-05T04:12:04.818Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
+    "total": 5,
     "implemented": 3,
     "items": [
       {
         "id": "REQ-34",
-        "summary": "In the Admin Referrals Data View (current referrals queue UI), add filter controls for: (1) Status, (2) Program requested, and (3) Submission date range. Filters must be combinable (AND logic) and must update the visible referrals list immediately on change.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ReferralsTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ReferralsTab.tsx"
-        ]
+        "summary": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-35",
-        "summary": "Implement the 'Program requested' filter options by deriving a unique, sorted list of programRequested values from the currently loaded referrals data, and include an explicit 'All programs' option.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/referralFilters.ts",
-          "frontend/src/components/ReferralsTab.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/referralFilters.ts",
-          "frontend/src/components/ReferralsTab.tsx"
-        ]
+        "summary": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-36",
-        "summary": "Implement the 'Submission date range' filter using referral.createdAt as the submission timestamp, with inclusive boundaries for the selected start and end dates.",
+        "summary": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/referralFilters.ts",
-          "frontend/src/components/ReferralsTab.tsx"
+          "frontend/src/components/ReferralsTab.tsx",
+          "frontend/src/utils/userDisplay.ts"
         ],
         "matchedFiles": [
-          "frontend/src/utils/referralFilters.ts",
-          "frontend/src/components/ReferralsTab.tsx"
+          "frontend/src/components/ReferralsTab.tsx",
+          "frontend/src/utils/userDisplay.ts"
+        ]
+      },
+      {
+        "id": "REQ-37",
+        "summary": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/IntakesTab.tsx",
+          "frontend/src/components/IntakesDataViewTable.tsx",
+          "frontend/src/utils/userDisplay.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/IntakesTab.tsx",
+          "frontend/src/components/IntakesDataViewTable.tsx",
+          "frontend/src/utils/userDisplay.ts"
+        ]
+      },
+      {
+        "id": "REQ-38",
+        "summary": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/backend.d.ts",
+          "frontend/src/components/ReferralsTab.tsx",
+          "frontend/src/components/IntakesTab.tsx",
+          "frontend/src/components/IntakesDataViewTable.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/backend.d.ts",
+          "frontend/src/components/ReferralsTab.tsx",
+          "frontend/src/components/IntakesTab.tsx",
+          "frontend/src/components/IntakesDataViewTable.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/IntakesDataViewTable.tsx",
+    "frontend/src/components/IntakesTab.tsx",
     "frontend/src/components/ReferralsTab.tsx",
-    "frontend/src/utils/referralFilters.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/utils/userDisplay.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

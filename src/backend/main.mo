@@ -12,9 +12,9 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import UserApproval "user-approval/approval";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   let approvalState = UserApproval.initState(accessControlState);
@@ -84,6 +84,7 @@ actor {
     documents : [Document];
     internalNotes : ?Text;
     statusHistory : [StatusHistoryEntry];
+    lastUpdatedBy : ?Principal;
   };
 
   type Intake = {
@@ -101,6 +102,7 @@ actor {
     internalNotes : ?Text;
     caseManager : ?Principal;
     statusHistory : [IntakeStatusHistoryEntry];
+    lastUpdatedBy : ?Principal;
   };
 
   module Bed {
@@ -187,7 +189,13 @@ actor {
   let pendingRequests = Map.empty<Nat, AccessRequest>();
   let activityLog = List.empty<ActivityLogEntry>();
 
-  var hasAdmin : Bool = false;
+  func safeComparePrincipal(a : ?Principal, b : ?Principal) : Bool {
+    switch (a, b) {
+      case (?aVal, ?bVal) { aVal == bVal };
+      case (null, null) { true };
+      case (_) { false };
+    };
+  };
 
   func logActivity(user : Principal, action : ActionType, entity : EntityType, recordId : Nat) {
     let entry : ActivityLogEntry = {
@@ -201,12 +209,10 @@ actor {
   };
 
   func isStaffOrAdmin(caller : Principal) : Bool {
-    // First check if caller is admin via AccessControl
-    if (AccessControl.isAdmin(accessControlState, caller)) {
+    if (isAdminInBothSystems(caller)) {
       return true;
     };
 
-    // Then check if caller has Staff role in profile
     switch (userProfiles.get(caller)) {
       case (null) { false };
       case (?profile) {
@@ -215,6 +221,99 @@ actor {
           case (_) { false };
         };
       };
+    };
+  };
+
+  func isAdminInBothSystems(user : Principal) : Bool {
+    let isAdminInAccessControl = AccessControl.isAdmin(accessControlState, user);
+    let isAdminInProfile = switch (userProfiles.get(user)) {
+      case (null) { false };
+      case (?profile) {
+        switch (profile.role) {
+          case (?"Admin") { true };
+          case (_) { false };
+        };
+      };
+    };
+    isAdminInAccessControl and isAdminInProfile;
+  };
+
+  func syncAdminStatus(user : Principal) {
+    let isAdminInAccessControl = AccessControl.isAdmin(accessControlState, user);
+    let profileOpt = userProfiles.get(user);
+
+    let isAdminInProfile = switch (profileOpt) {
+      case (null) { false };
+      case (?profile) {
+        switch (profile.role) {
+          case (?"Admin") { true };
+          case (_) { false };
+        };
+      };
+    };
+
+    if (isAdminInAccessControl or isAdminInProfile) {
+      if (not isAdminInAccessControl) {
+        AccessControl.assignRole(accessControlState, user, user, #admin);
+      };
+
+      if (not isAdminInProfile) {
+        let updatedProfile : UserProfile = switch (profileOpt) {
+          case (null) {
+            {
+              name = "";
+              email = null;
+              phone = null;
+              role = ?"Admin";
+            };
+          };
+          case (?existing) {
+            {
+              name = existing.name;
+              email = existing.email;
+              phone = existing.phone;
+              role = ?"Admin";
+            };
+          };
+        };
+        userProfiles.add(user, updatedProfile);
+      };
+    };
+  };
+
+  func hasAnyAdmin() : Bool {
+    let allUsers = userProfiles.keys().toArray();
+    allUsers.any(
+      func(principal : Principal) : Bool {
+        isAdminInBothSystems(principal)
+      }
+    );
+  };
+
+  func ensureAtLeastOneAdmin(caller : Principal) {
+    if (not hasAnyAdmin()) {
+      AccessControl.assignRole(accessControlState, caller, caller, #admin);
+
+      let existingProfile = userProfiles.get(caller);
+      let updatedProfile : UserProfile = switch (existingProfile) {
+        case (null) {
+          {
+            name = "";
+            email = null;
+            phone = null;
+            role = ?"Admin";
+          };
+        };
+        case (?existing) {
+          {
+            name = existing.name;
+            email = existing.email;
+            phone = existing.phone;
+            role = ?"Admin";
+          };
+        };
+      };
+      userProfiles.add(caller, updatedProfile);
     };
   };
 
@@ -242,7 +341,7 @@ actor {
     };
 
     switch (referral.submittedBy) {
-      case (?submittedBy) { submittedBy == caller };
+      case (?submittedBy) { safeComparePrincipal(?caller, referral.submittedBy) };
       case (null) { false };
     };
   };
@@ -272,6 +371,8 @@ actor {
       Runtime.trap("Unauthorized: Only authenticated users can save profiles");
     };
 
+    ensureAtLeastOneAdmin(caller);
+
     let existingProfile = userProfiles.get(caller);
     let roleToUse = switch (existingProfile) {
       case (null) { null };
@@ -286,6 +387,7 @@ actor {
     };
 
     userProfiles.add(caller, updatedProfile);
+    syncAdminStatus(caller);
   };
 
   public query ({ caller }) func getCallerPartnerAgencyProfile() : async ?PartnerAgencyProfile {
@@ -300,6 +402,8 @@ actor {
       Runtime.trap("Unauthorized: Only authenticated users can save Partner Agency profiles");
     };
 
+    ensureAtLeastOneAdmin(caller);
+
     if (profile.agencyName == "" or profile.primaryContactName == "" or profile.phone == "" or profile.email == "") {
       Runtime.trap("Invalid Input: Missing required Partner Agency profile fields");
     };
@@ -308,30 +412,15 @@ actor {
   };
 
   func countAdmins() : Nat {
-    userProfiles.values().toArray().filter(
-      func(profile) {
-        switch (profile.role) {
-          case (?role) { role == "Admin" };
-          case (null) { false };
-        };
+    userProfiles.keys().toArray().filter(
+      func(principal) {
+        isAdminInBothSystems(principal)
       }
     ).size();
   };
 
-  func updateHasAdmin() {
-    hasAdmin := countAdmins() > 0;
-  };
-
   func isUserAdmin(user : Principal) : Bool {
-    switch (userProfiles.get(user)) {
-      case (null) { false };
-      case (?profile) {
-        switch (profile.role) {
-          case (?role) { role == "Admin" };
-          case (null) { false };
-        };
-      };
-    };
+    isAdminInBothSystems(user);
   };
 
   public shared ({ caller }) func assignUserRole(user : Principal, role : Text) : async () {
@@ -343,7 +432,6 @@ actor {
       Runtime.trap("Invalid role: Must be Admin, Staff, or PartnerAgency");
     };
 
-    // Prevent downgrading the last Admin
     if (isUserAdmin(user) and role != "Admin") {
       let adminCount = countAdmins();
       if (adminCount <= 1) {
@@ -372,7 +460,12 @@ actor {
     };
 
     userProfiles.add(user, updatedProfile);
-    updateHasAdmin();
+
+    if (role == "Admin") {
+      AccessControl.assignRole(accessControlState, caller, user, #admin);
+    };
+
+    syncAdminStatus(user);
   };
 
   public shared ({ caller }) func removeUserRole(user : Principal) : async () {
@@ -380,7 +473,6 @@ actor {
       Runtime.trap("Unauthorized: Only admins can remove roles");
     };
 
-    // Prevent removing the last Admin
     if (isUserAdmin(user)) {
       let adminCount = countAdmins();
       if (adminCount <= 1) {
@@ -400,45 +492,6 @@ actor {
         userProfiles.add(user, updatedProfile);
       };
     };
-    updateHasAdmin();
-  };
-
-  public shared ({ caller }) func ensureAdminRole() : async () {
-    // Initialize hasAdmin flag on first call if needed
-    if (not hasAdmin) {
-      updateHasAdmin();
-    };
-
-    if (hasAdmin) { return };
-
-    let existingProfile = userProfiles.get(caller);
-
-    switch (existingProfile) {
-      case (?profile) {
-        if (switch (profile.role) { case (null) { false }; case (?role) { role == "Admin" } }) {
-          Runtime.trap("Caller already has the Admin role");
-        };
-
-        let updatedProfile : UserProfile = {
-          name = profile.name;
-          email = profile.email;
-          phone = profile.phone;
-          role = ?"Admin";
-        };
-        userProfiles.add(caller, updatedProfile);
-      };
-      case (null) {
-        let newProfile : UserProfile = {
-          name = "";
-          email = null;
-          phone = null;
-          role = ?"Admin";
-        };
-        userProfiles.add(caller, newProfile);
-      };
-    };
-
-    hasAdmin := true;
   };
 
   public query ({ caller }) func getAllUsers() : async [(Principal, UserProfile)] {
@@ -454,12 +507,11 @@ actor {
     };
 
     let isCallerAdmin = AccessControl.isAdmin(accessControlState, caller);
-    
-    // Get all principals that are recognized as admins by AccessControl
+
     let allUsers = userProfiles.keys().toArray();
     let adminPrincipals = allUsers.filter(
       func(principal : Principal) : Bool {
-        AccessControl.isAdmin(accessControlState, principal)
+        isAdminInBothSystems(principal)
       }
     );
 
@@ -467,7 +519,7 @@ actor {
       callerPrincipal = caller;
       isAdmin = isCallerAdmin;
       allAdminPrincipals = adminPrincipals;
-    }
+    };
   };
 
   func filterReferralForPartnerAgency(referral : Referral) : Referral {
@@ -489,6 +541,7 @@ actor {
       documents = referral.documents;
       internalNotes = null;
       statusHistory = referral.statusHistory;
+      lastUpdatedBy = referral.lastUpdatedBy;
     };
   };
 
@@ -552,6 +605,7 @@ actor {
           documents = referral.documents;
           internalNotes = ?notes;
           statusHistory = referral.statusHistory;
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -581,6 +635,7 @@ actor {
           internalNotes = ?notes;
           caseManager = intake.caseManager;
           statusHistory = intake.statusHistory;
+          lastUpdatedBy = ?caller;
         };
         intakes.add(intakeId, updatedIntake);
       };
@@ -598,6 +653,8 @@ actor {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can create referrals");
     };
+
+    ensureAtLeastOneAdmin(caller);
 
     if (referrerName == "" or clientName == "" or reason == "" or programRequested == "") {
       Runtime.trap("Invalid Input: Missing required referral fields");
@@ -637,6 +694,7 @@ actor {
       documents = [];
       internalNotes = null;
       statusHistory = [initialStatusHistoryEntry];
+      lastUpdatedBy = ?caller;
     };
 
     referrals.add(newId, referral);
@@ -680,6 +738,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -699,7 +758,7 @@ actor {
     let myReferrals = referrals.values().toArray().filter(
       func(referral) {
         switch (referral.submittedBy) {
-          case (?submittedBy) { submittedBy == caller };
+          case (?submittedBy) { safeComparePrincipal(?caller, referral.submittedBy) };
           case (null) { false };
         };
       }
@@ -763,6 +822,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -805,6 +865,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -819,6 +880,8 @@ actor {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can upload documents");
     };
+
+    ensureAtLeastOneAdmin(caller);
 
     switch (referrals.get(referralId)) {
       case (null) { Runtime.trap("Referral not found") };
@@ -843,6 +906,7 @@ actor {
           documents = referral.documents.concat(newDocuments);
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory;
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -861,6 +925,8 @@ actor {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can update referrals");
     };
+
+    ensureAtLeastOneAdmin(caller);
 
     if (referrerName == "" or clientName == "" or reason == "" or programRequested == "") {
       Runtime.trap("Invalid Input: Missing required referral fields");
@@ -893,6 +959,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory;
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralUpdated, #referral, referralId);
@@ -912,6 +979,8 @@ actor {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can resubmit referrals");
     };
+
+    ensureAtLeastOneAdmin(caller);
 
     if (referrerName == "" or clientName == "" or reason == "" or programRequested == "") {
       Runtime.trap("Invalid Input: Missing required referral fields");
@@ -950,6 +1019,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralResubmitted, #referral, referralId);
@@ -989,6 +1059,7 @@ actor {
           documents = referral.documents;
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         referrals.add(referralId, updatedReferral);
 
@@ -1016,6 +1087,7 @@ actor {
           internalNotes = null;
           caseManager = null;
           statusHistory = [initialStatusHistoryEntry];
+          lastUpdatedBy = ?caller;
         };
         intakes.add(newIntakeId, newIntake);
 
@@ -1053,6 +1125,7 @@ actor {
       internalNotes = null;
       caseManager = null;
       statusHistory = [initialStatusHistoryEntry];
+      lastUpdatedBy = ?caller;
     };
 
     intakes.add(newId, intake);
@@ -1083,6 +1156,7 @@ actor {
           internalNotes = intake.internalNotes;
           caseManager = managerId;
           statusHistory = intake.statusHistory;
+          lastUpdatedBy = ?caller;
         };
         intakes.add(intakeId, updatedIntake);
       };
@@ -1118,6 +1192,7 @@ actor {
           internalNotes = intake.internalNotes;
           caseManager = intake.caseManager;
           statusHistory = intake.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         intakes.add(intakeId, updatedIntake);
         logActivity(caller, #intakeStatusChanged, #intake, intakeId);
@@ -1162,6 +1237,7 @@ actor {
           internalNotes = intake.internalNotes;
           caseManager = intake.caseManager;
           statusHistory = intake.statusHistory.concat([newHistoryEntry]);
+          lastUpdatedBy = ?caller;
         };
         intakes.add(intakeId, updatedIntake);
 
@@ -1229,6 +1305,7 @@ actor {
               internalNotes = intake.internalNotes;
               caseManager = intake.caseManager;
               statusHistory = intake.statusHistory;
+              lastUpdatedBy = ?caller;
             };
             intakes.add(intakeId, updatedIntake);
             logActivity(caller, #bedAssigned, #bed, bedId);
@@ -1526,7 +1603,7 @@ actor {
     let allUsers = userProfiles.keys().toArray();
     allUsers.filter(
       func(principal : Principal) : Bool {
-        AccessControl.isAdmin(accessControlState, principal)
+        isAdminInBothSystems(principal)
       }
     );
   };
@@ -1535,6 +1612,9 @@ actor {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can request approval");
     };
+
+    ensureAtLeastOneAdmin(caller);
+
     UserApproval.requestApproval(approvalState, caller);
   };
 
@@ -1720,4 +1800,3 @@ actor {
     );
   };
 };
-
