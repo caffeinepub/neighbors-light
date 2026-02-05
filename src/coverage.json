@@ -1,29 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T22:53:29.255Z",
+  "generatedAt": "2026-02-05T23:05:37.274Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-78",
-        "summary": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/PublicReferralPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/PublicReferralPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-79",
-        "summary": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
+        "id": "REQ-80",
+        "summary": "Update the public (no-login) referral submission form layout in `frontend/src/pages/PublicReferralPage.tsx` for the existing website field (use `website` if present; otherwise apply the same changes to `company_website` if that is the field that exists): set the field label text to exactly “Website (leave blank)”, add helper text directly below the input that reads exactly “Please leave this field empty.”, and add extra vertical spacing above this field so it is visually separated from the main referral questions.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/PublicReferralPage.tsx"

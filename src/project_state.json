@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 203,
+  "projectStateVersion": 205,
   "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, administrative access-request approval, and now staff workflows for Case Manager ownership of Intakes plus a staff-only Training + Employment workflow (training checklists, track selection, employment details, and weekly check-ins). The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, training/employment records, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
   "architectural_notes": [
     "Frontend uses TanStack React Query with custom hooks (useQueries.ts) for each backend operation; mutations invalidate relevant query keys to keep UI consistent.",
@@ -23,7 +23,7 @@
     "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name.",
     "Deployment currently failing; user requests simplifying/removing honeypot rejection logic and making `website` a normal visible field to resolve deployment."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "IF-1",
@@ -472,6 +472,14 @@
         "REQ-79"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-public-no-login-referral-submission-form-layout-in-frontend-src-pages-publicreferralpage-tsx-for-the-existing-website-field-use-website-if-present-otherwise-apply-the-same-changes-to-company-website-if-that-is-the-field-that-exists-set-the-field-label-text-to-exactly-website-leave-blank-add-helper-text-directly-below-the-input-that-reads-exactly-please-leave-this-field-empty-and-add-extra-vertical-spacing-above-this-field-so-it-is-visually-separated-from-the-main-referral-questions",
+      "title": "Update the public (no-login) referral submission form layout in `frontend/src/pages/PublicReferralPage.tsx` for the existing website field (use `website` if present; otherwise apply the same changes to `company_website` if that is the field that exists): set the field label text to exactly “Website (leave blank)”, add helper text directly below the input that reads exactly “Please leave this field empty.”, and add extra vertical spacing above this field so it is visually separated from the main referral questions.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -756,6 +764,12 @@
     {
       "id": "AR-53",
       "summary": "Simplify public referral form spam honeypot: keep a single normal (visible) text field named `website`, labeled “Website (leave blank)” and placed at the bottom of the form; no hidden behavior, no conditional logic, and do not reject/ignore submissions based on this field.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Update the public (no-login) Referral form layout: for the existing company_website/website field, set label to “Website (leave blank)”, add helper text “Please leave this field empty.” below it, and add extra spacing above to visually separate it; do not change validation, logic, or behavior.",
       "reqIds": [],
       "status": "pending"
     }

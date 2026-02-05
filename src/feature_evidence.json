@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-public-no-login-referral-submission-page-at-frontend-src-pages-publicreferralpage-tsx-to-include-a-single-normal-visible-text-input-field-named-website-labeled-exactly-website-leave-blank-placed-at-the-bottom-of-the-form-below-all-existing-fields-and-above-the-submit-button-or-directly-above-the-footer-area-within-the-form-the-field-must-be-visually-unobtrusive-e-g-small-secondary-styling-consistent-with-the-existing-tailwind-shadcn-form-look-but-it-must-remain-a-standard-visible-form-field",
-      "featureTitle": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
+      "featureId": "feature-update-the-public-no-login-referral-submission-form-layout-in-frontend-src-pages-publicreferralpage-tsx-for-the-existing-website-field-use-website-if-present-otherwise-apply-the-same-changes-to-company-website-if-that-is-the-field-that-exists-set-the-field-label-text-to-exactly-website-leave-blank-add-helper-text-directly-below-the-input-that-reads-exactly-please-leave-this-field-empty-and-add-extra-vertical-spacing-above-this-field-so-it-is-visually-separated-from-the-main-referral-questions",
+      "featureTitle": "Update the public (no-login) referral submission form layout in `frontend/src/pages/PublicReferralPage.tsx` for the existing website field (use `website` if present; otherwise apply the same changes to `company_website` if that is the field that exists): set the field label text to exactly “Website (leave blank)”, add helper text directly below the input that reads exactly “Please leave this field empty.”, and add extra vertical spacing above this field so it is visually separated from the main referral questions.",
       "files": [
         "frontend/src/pages/PublicReferralPage.tsx"
       ],
@@ -18,28 +18,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-78"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-remove-avoid-any-honeypot-behavior-tied-to-the-website-field-on-the-public-referral-form-do-not-hide-the-field-do-not-block-submission-do-not-ignore-submissions-and-do-not-add-any-conditional-logic-based-on-website-including-trim-checks-submitting-the-form-must-always-follow-the-existing-usecreatereferral-actor-createreferral-mutation-flow-exactly-as-it-does-today",
-      "featureTitle": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
-      "files": [
-        "frontend/src/pages/PublicReferralPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "blob-storage@4.0.0",
-        "user-approval@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-79"
+        "REQ-80"
       ],
       "confidence": "high"
     }

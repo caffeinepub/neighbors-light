@@ -1,56 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Simplify public referral spam honeypot to a visible, non-blocking Website field",
-  "priority": "high",
+  "title": "Adjust public referral website field label, helper text, and spacing",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-78",
-      "text": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
+      "id": "REQ-80",
+      "text": "Update the public (no-login) referral submission form layout in `frontend/src/pages/PublicReferralPage.tsx` for the existing website field (use `website` if present; otherwise apply the same changes to `company_website` if that is the field that exists): set the field label text to exactly “Website (leave blank)”, add helper text directly below the input that reads exactly “Please leave this field empty.”, and add extra vertical spacing above this field so it is visually separated from the main referral questions.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1"
         ],
         "quotes": [
-          "Keep a single text field named:\n- website\n\nShow it as a normal field but make it visually unobtrusive:\n- label it “Website (leave blank)”\n- place it at the bottom of the form"
+          "Update the public Referral form layout.\n\nFor the field:\n- company_website (or website, whichever exists)\n\nChange the label text to:\n“Website (leave blank)”\n\nAdd helper text below the field:\n“Please leave this field empty.”\n\nAdd extra spacing above this field so it appears separated from the main referral questions.\n\nDo not change validation, logic, or behavior."
         ]
       },
       "acceptanceCriteria": [
-        "The public referral form renders a visible text input with `id=\"website\"` and label text exactly “Website (leave blank)”",
-        "The `website` input appears at the bottom of the form (after existing fields) and is visually unobtrusive while still readable/usable",
-        "No other honeypot/spam fields are present on this page"
-      ]
-    },
-    {
-      "id": "REQ-79",
-      "text": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "Do not add any hidden behavior and do not reject submissions.\nDo not add any conditional logic."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Filling or not filling the `website` field does not change validation behavior or submission behavior",
-        "`handleSubmit` does not contain any conditional checks that branch on `website` content (no rejection/early return/skip-mutation logic based on `website`)",
-        "The referral creation mutation is still called on valid submissions regardless of `website` value",
-        "The `website` value is not required and does not create validation errors"
+        "On `/public/referral`, the website field label is exactly “Website (leave blank)” (English).",
+        "A helper text line appears immediately below the website input and reads exactly “Please leave this field empty.” (English).",
+        "There is noticeably more spacing above the website field compared to the spacing between the main referral questions (i.e., it is visually separated).",
+        "No referral form validation rules, submit handler logic, or submission behavior changes (the referral creation flow remains exactly as it is today)."
       ]
     }
   ],
   "constraints": [
-    "Use English for all user-facing text.",
-    "Do not change backend schemas, backend methods, or backend validation for this request.",
-    "Do not alter any existing public referral form fields or the referral submission payload/behavior besides adding the visible `website` field as specified.",
-    "Do not implement hidden fields, CSS-hidden fields, offscreen positioning, or anti-bot conditional logic for `website`."
+    "Use English for all user-facing text changed/added by this request.",
+    "Do not change validation, submit logic, or any behavioral flow related to referral submission; this is a layout/content-only change.",
+    "Make changes only in the public referral form UI (no backend changes)."
   ],
   "nonGoals": [
-    "Adding spam detection, rate limiting, captchas, or any other anti-abuse mechanisms.",
-    "Persisting `website` to the backend referral record or including it in the `createReferral` payload.",
-    "Changing the required checkbox (`referral_partner_confirm`) behavior or validation."
+    "Adding new fields to the public referral form.",
+    "Changing any backend types, schemas, canister methods, or stored referral data.",
+    "Adding/altering any spam prevention or honeypot logic tied to the website/company_website field."
   ],
   "imageRequirements": {
     "required": [],

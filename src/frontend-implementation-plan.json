@@ -1,38 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Public referral form: visible non-blocking Website field (no honeypot logic)",
+  "title": "Public referral form website field label/helper text/spacing adjustments",
   "requirements": [
     {
-      "id": "REQ-78",
-      "summary": "Add a visible, visually unobtrusive Website (leave blank) text input named `website` at the bottom of the public referral form.",
+      "id": "REQ-80",
+      "summary": "Adjust the public referral form’s website field label text, add helper text below the input, and increase vertical spacing above the website field without changing any validation or submission behavior.",
       "acceptanceCriteria": [
-        "The public referral form renders a visible text input with `id=\"website\"` and label text exactly “Website (leave blank)”",
-        "The `website` input appears at the bottom of the form (after existing fields) and is visually unobtrusive while still readable/usable",
-        "No other honeypot/spam fields are present on this page"
+        "On `/public/referral`, the website field label is exactly “Website (leave blank)” (English).",
+        "A helper text line appears immediately below the website input and reads exactly “Please leave this field empty.” (English).",
+        "There is noticeably more spacing above the website field compared to the spacing between the main referral questions (i.e., it is visually separated).",
+        "No referral form validation rules, submit handler logic, or submission behavior changes (the referral creation flow remains exactly as it is today)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/PublicReferralPage.tsx",
           "operation": "modify",
-          "description": "Add a new controlled `website` text field to the public referral form UI using existing shadcn/ui `Label` + `Input`, labeled exactly “Website (leave blank)”, positioned after all existing fields and immediately above the submit button (or directly above the form’s footer area). Apply small/secondary Tailwind styling (e.g., smaller text and muted tone) so it remains visible but unobtrusive. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-79",
-      "summary": "Ensure the new `website` field has no honeypot behavior and does not alter existing validation or submission/mutation flow.",
-      "acceptanceCriteria": [
-        "Filling or not filling the `website` field does not change validation behavior or submission behavior",
-        "`handleSubmit` does not contain any conditional checks that branch on `website` content (no rejection/early return/skip-mutation logic based on `website`)",
-        "The referral creation mutation is still called on valid submissions regardless of `website` value",
-        "The `website` value is not required and does not create validation errors"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/PublicReferralPage.tsx",
-          "operation": "modify",
-          "description": "Keep `handleSubmit` and validation flow unchanged with respect to submission: do not add any conditional logic based on `website`, do not add trimming/validation checks for it, and do not include it in the `validateReferralForm` call or the `useCreateReferral`/mutation payload. The field should remain optional and purely UI-level. Verify the component's usage instructions before implementing."
+          "description": "Update the existing website field block (use `website`; if not present in the file, apply the same UI-only changes to `company_website` instead): ensure the label text is exactly “Website (leave blank)”, add a helper text line immediately below the input reading exactly “Please leave this field empty.”, and add extra vertical spacing above this field (e.g., additional margin/padding on the website field container) to visually separate it from the main referral questions. Do not modify validation, state, submit handler, or referral creation behavior."
         }
       ]
     }

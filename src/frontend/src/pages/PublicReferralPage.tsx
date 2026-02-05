@@ -297,8 +297,8 @@ export default function PublicReferralPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="website" className="text-xs text-muted-foreground">
+              <div className="space-y-2 pt-8">
+                <Label htmlFor="website">
                   Website (leave blank)
                 </Label>
                 <Input
@@ -309,6 +309,9 @@ export default function PublicReferralPage() {
                   className="text-sm"
                   tabIndex={-1}
                 />
+                <p className="text-sm text-muted-foreground">
+                  Please leave this field empty.
+                </p>
               </div>
 
               <Button type="submit" disabled={createReferral.isPending} className="w-full">
