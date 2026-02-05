@@ -1,108 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Show last updated user + timestamp for Referrals and Intakes",
-  "priority": "normal",
+  "title": "Simplify public referral spam honeypot to a visible, non-blocking Website field",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-34",
-      "text": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Display “Last updated by” and timestamp on Referrals and Intakes."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Referral records returned by backend queries include a field representing the principal who last updated the referral (nullable for legacy/system cases).",
-        "Intake records returned by backend queries include a field representing the principal who last updated the intake (nullable for legacy/system cases).",
-        "Each of the listed mutation paths sets the \"last updated by\" field to the current caller principal when it updates the record.",
-        "Bed assignment to an intake updates the intake's updatedAt timestamp and last-updated-by field (currently it does not update updatedAt)."
-      ]
-    },
-    {
-      "id": "REQ-35",
-      "text": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Display “Last updated by” and timestamp on Referrals and Intakes."
-        ]
-      },
-      "acceptanceCriteria": [
-        "For each record mutation listed in REQ-34, the stored updatedAt is set to the current time when the record is modified.",
-        "Calling the relevant list/detail queries after an update returns updatedAt reflecting that update."
-      ]
-    },
-    {
-      "id": "REQ-36",
-      "text": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "id": "REQ-78",
+      "text": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3"
         ],
         "quotes": [
-          "Display “Last updated by” and timestamp on Referrals and Intakes."
+          "Keep a single text field named:\n- website\n\nShow it as a normal field but make it visually unobtrusive:\n- label it “Website (leave blank)”\n- place it at the bottom of the form"
         ]
       },
       "acceptanceCriteria": [
-        "Opening a referral detail view shows a \"Last updated\" timestamp derived from the referral updatedAt value.",
-        "Opening a referral detail view shows \"Last updated by\" derived from the referral's last-updated-by principal, rendered via existing user lookup logic (fall back to a shortened principal string when name is unavailable, and show \"System\" when no principal exists).",
-        "All user-facing labels are in English and match the required strings."
+        "The public referral form renders a visible text input with `id=\"website\"` and label text exactly “Website (leave blank)”",
+        "The `website` input appears at the bottom of the form (after existing fields) and is visually unobtrusive while still readable/usable",
+        "No other honeypot/spam fields are present on this page"
       ]
     },
     {
-      "id": "REQ-37",
-      "text": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "id": "REQ-79",
+      "text": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3"
         ],
         "quotes": [
-          "Display “Last updated by” and timestamp on Referrals and Intakes."
+          "Do not add any hidden behavior and do not reject submissions.\nDo not add any conditional logic."
         ]
       },
       "acceptanceCriteria": [
-        "Intake detail view shows \"Last updated\" based on intake.updatedAt and \"Last updated by\" based on the intake last-updated-by principal with the same fallback behavior as in referrals.",
-        "Admin Intake Data View table includes a visible \"Last updated\" value and \"Last updated by\" value for each row (either as new columns or clearly readable row metadata).",
-        "All user-facing labels are in English and match the required strings."
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "text": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Display “Last updated by” and timestamp on Referrals and Intakes."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Frontend compiles with the updated Referral and Intake types that include the new last-updated-by field.",
-        "Existing referrals/intakes list and detail views continue to load successfully.",
-        "The UI displays last-updated information without runtime errors when the last-updated-by field is null/undefined."
+        "Filling or not filling the `website` field does not change validation behavior or submission behavior",
+        "`handleSubmit` does not contain any conditional checks that branch on `website` content (no rejection/early return/skip-mutation logic based on `website`)",
+        "The referral creation mutation is still called on valid submissions regardless of `website` value",
+        "The `website` value is not required and does not create validation errors"
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko canister with all logic in backend/main.mo.",
-    "Do not edit any files under frontend/src/components/ui or the immutable frontend hook paths listed in SYSTEM_CONTEXT.",
-    "Use English for all user-facing text, and use labels exactly \"Last updated\" and \"Last updated by\" where specified."
+    "Use English for all user-facing text.",
+    "Do not change backend schemas, backend methods, or backend validation for this request.",
+    "Do not alter any existing public referral form fields or the referral submission payload/behavior besides adding the visible `website` field as specified.",
+    "Do not implement hidden fields, CSS-hidden fields, offscreen positioning, or anti-bot conditional logic for `website`."
   ],
   "nonGoals": [
-    "Do not introduce third-party authentication or external databases.",
-    "Do not add new workflow steps or status changes beyond capturing and displaying last-update metadata.",
-    "Do not redesign the Referrals/Intakes information architecture beyond adding the requested fields."
+    "Adding spam detection, rate limiting, captchas, or any other anti-abuse mechanisms.",
+    "Persisting `website` to the backend referral record or including it in the `createReferral` payload.",
+    "Changing the required checkbox (`referral_partner_confirm`) behavior or validation."
   ],
   "imageRequirements": {
     "required": [],

@@ -196,3 +196,50 @@ This document outlines the manual smoke test flow to verify the production deplo
 - Screenshot of the dashboard
 - Console log showing role check results
 - Network tab showing backend responses
+
+## Test 7: Bed Data Persistence Across Sessions
+
+**Objective:** Verify bed inventory persists across browser refresh, logout/login, and identity changes
+
+**Prerequisites:**
+- Logged in as Admin user
+- At least one bed exists in the system (create via Facilities tab if needed)
+- Note the current bed count and bed details (bed number, program, status)
+
+**Steps:**
+1. Navigate to the Beds tab
+2. Record the current bed count and details of at least one bed
+3. Refresh the browser (F5 or Cmd+R)
+4. Wait for the application to reload and navigate back to Beds tab
+5. Verify bed count and details match the recorded values
+6. Log out using the header dropdown
+7. Log back in with the same Internet Identity
+8. Navigate to Beds tab again
+9. Verify bed count and details still match
+
+**Expected Results:**
+- ✅ After browser refresh, bed count remains the same
+- ✅ After browser refresh, bed details (number, program, status, occupant) remain unchanged
+- ✅ After logout/login, bed count remains the same
+- ✅ After logout/login, bed details remain unchanged
+- ✅ No automatic bed creation, deletion, or reset occurs
+- ✅ Bed IDs remain consistent across sessions
+
+**Failure Indicators:**
+- ❌ Bed count changes after refresh or logout/login
+- ❌ Beds are automatically created or deleted
+- ❌ Bed details are reset or modified without explicit user action
+- ❌ Bed IDs change between sessions
+- ❌ Console errors related to bed queries or mutations
+
+**Capture on Failure:**
+- Screenshot of Beds tab before and after refresh/logout
+- Console log showing any bed-related mutations
+- Network tab showing bed query responses
+- Record of bed count and IDs before and after
+
+**Debug Information to Collect:**
+- Initial bed count and bed IDs
+- Bed count and IDs after each step
+- Any console warnings or errors
+- Network requests showing bed creation/deletion (should be none)

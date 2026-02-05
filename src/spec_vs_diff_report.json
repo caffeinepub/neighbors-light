@@ -1,63 +1,32 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T04:12:04.779Z",
-  "summary": "Diff adds lastUpdatedBy fields to backend Referral/Intake types and introduces a migration module initializing lastUpdatedBy to null for existing records. Frontend adds a user-display helper and updates the Intakes admin data table headers to include Last updated/Last updated by. Evidence for updating all backend mutation paths, ensuring updatedAt alignment, and updating frontend type bindings is not present in the provided diff summary.",
+  "generatedAt": "2026-02-05T22:53:29.252Z",
+  "summary": "REQ-79 appears satisfied in the visible portion of the diff: `website` is added to component state but is not used for validation, branching, or submission payload. REQ-78 cannot be fully verified from the truncated diff because the actual rendered input/label placement and `id=\"website\"` are not shown. Additional non-requested metadata/state files were modified.",
   "missing_requirements": [
     {
-      "id": "REQ-34",
-      "requirement": "Update \"last updated by\" on every backend mutation that changes a Referral or Intake record (status changes, edits/resubmissions, internal notes, document uploads; intake reviews, case manager assignment, bed assignment, marking exited), and ensure bed assignment updates updatedAt + lastUpdatedBy.",
-      "reason": "The diff shows the new lastUpdatedBy field added to the Referral/Intake record types and a migration initializing it to null, but does not show any of the listed mutation functions being updated to set lastUpdatedBy = caller or to fix bed assignment updating updatedAt.",
+      "id": "REQ-78",
+      "requirement": "Render a visible text input field named `website` with label exactly “Website (leave blank)”, with `id=\"website\"`, placed at the bottom of the form and visually unobtrusive, and ensure no other honeypot/spam fields are present on this page.",
+      "reason": "The diff shows `website` state was added, but the truncated file content does not include the JSX that renders the `website` input/label, its `id`, or its placement at the bottom of the form. The diff also does not provide enough evidence to confirm the absence of other honeypot/spam fields on the page.",
       "evidence": [
-        "backend/main.mo",
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "id": "REQ-35",
-      "requirement": "Ensure updatedAt is set to the current time across the same set of mutations listed in REQ-34 so it matches the lastUpdatedBy value.",
-      "reason": "No specific mutation-path changes are shown in the diff summary demonstrating updatedAt being set during each mutation, including the bed assignment path called out as currently not updating updatedAt.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "requirement": "Update frontend canister type bindings and related TypeScript types so Referral/Intake include the new last-updated-by field without breaking existing queries/mutations.",
-      "reason": "The diff shows components importing types from '../backend' and using fields, but does not show any changes to the generated/declared backend type bindings file(s) (e.g., candid/TS bindings) to actually add lastUpdatedBy to the Referral/Intake types.",
-      "evidence": [
-        "frontend/src/components/IntakesDataViewTable.tsx",
-        "frontend/src/components/IntakesTab.tsx",
-        "frontend/src/components/ReferralsTab.tsx"
+        "frontend/src/pages/PublicReferralPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a dedicated backend migration module/file to transform stored records and add lastUpdatedBy with null defaults.",
-      "reason": "The BuildRequest did not request adding a separate migration module/file; it only requested persisting and exposing last-updated metadata. This may be an implementation detail, but it is still an extra feature/artifact not explicitly requested and may conflict with the constraint to keep all backend logic in backend/main.mo.",
+      "description": "Project metadata/doc files updated (frontend file summaries and overall project state) unrelated to adding a visible `website` field on the public referral page.",
+      "reason": "The BuildRequest only asks for a UI change in `PublicReferralPage.tsx` (and behavior constraints). Modifying these repository metadata/summary files is not requested by the spec.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "Added a new frontend utility helper for resolving a principal to a display name with fallback logic.",
-      "reason": "The BuildRequest specified fallback behavior for display, but did not request adding a new shared utility module; this is additional structure beyond the stated requirements.",
-      "evidence": [
-        "frontend/src/utils/userDisplay.ts"
+        "frontend-file-summaries.txt",
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.58,
+  "confidence": 0.63,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/IntakesDataViewTable.tsx",
-    "frontend/src/components/IntakesTab.tsx",
-    "frontend/src/components/ReferralsTab.tsx",
-    "frontend/src/utils/userDisplay.ts",
+    "frontend/src/pages/PublicReferralPage.tsx",
     "project_state.json"
   ]
 }

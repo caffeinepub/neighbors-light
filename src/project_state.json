@@ -1,7 +1,29 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 145,
-  "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, and administrative access-request approval. The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
+  "projectStateVersion": 203,
+  "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, administrative access-request approval, and now staff workflows for Case Manager ownership of Intakes plus a staff-only Training + Employment workflow (training checklists, track selection, employment details, and weekly check-ins). The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, training/employment records, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
+  "architectural_notes": [
+    "Frontend uses TanStack React Query with custom hooks (useQueries.ts) for each backend operation; mutations invalidate relevant query keys to keep UI consistent.",
+    "Actor creation is encapsulated in useActor; actor is recreated per-identity and triggers global query invalidation/refetch when identity changes.",
+    "Authentication uses DFINITY Internet Identity via an AuthClient provider (InternetIdentityProvider) with persisted session identity and explicit login/logout controls.",
+    "Backend is a single Motoko actor composed via mixins: MixinAuthorization for access-control bootstrap and role querying, plus a Caffeine blob-storage mixin for blob GC and cycles refill mechanics.",
+    "Two parallel authorization concepts exist: (1) AccessControl.UserRole (#admin/#user/#guest) for basic permission gating; (2) application roles stored in UserProfile.role (Admin/Staff/PartnerAgency) for feature-level access restrictions.",
+    "Role-based routing in App.tsx gates access by requiring both a non-guest AccessControl role and a non-null UserProfile.role; otherwise users see profile setup or an access-pending screen.",
+    "Operational UIs are organized as tabbed dashboards (AdminDashboard/StaffDashboard/PartnerDashboard) with shared components and consistent loading/empty states.",
+    "Beds are modeled with program type and archived state; active-bed limits are enforced server-side (MaxActiveBeds=12) and mirrored in the UI.",
+    "Caffeine blob-storage integration exposes admin/gateway maintenance endpoints (authorized principal list refresh, dead blob listing/pruning, GC trigger) and a certificate creation helper for uploads.",
+    "Frontend template includes shadcn/ui component library sources plus custom ESLint rules (e.g., no BigInt in React Query keys; require InternetIdentityProvider) to enforce app conventions during development/build."
+  ],
+  "known_issues": [
+    "Duplicate role systems can drift: AccessControl role (#admin/#user) is distinct from UserProfile.role (Admin/Staff/PartnerAgency); App.tsx checks both, which can lead to confusing access states if one is set without the other.",
+    "Intake program selection in the UI (IntakesTab) is required but not sent to the backend; the backend Intake type does not store program, so program-based bed assignment context is not persisted.",
+    "assignBedToIntake does not validate that the selected bed's program matches any intake program (and no intake program exists in backend), so cross-program assignment is possible.",
+    "Public createAccessRequest endpoint has no visible anti-spam/rate limiting controls.",
+    "Blob storage cashier env var name appears inconsistent/typo-prone (\"CAFFFEINE_STORAGE_CASHIER_PRINCIPAL\"), which could cause runtime traps if deployment expects a different name.",
+    "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name.",
+    "Deployment currently failing; user requests simplifying/removing honeypot rejection logic and making `website` a normal visible field to resolve deployment."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "IF-1",
@@ -312,77 +334,147 @@
       "version": 1
     },
     {
-      "id": "feature-in-the-frontend-referrals-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-each-referral-in-the-referral-detail-view-using-english-labels-exactly-last-updated-and-last-updated-by",
-      "title": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "id": "IF-27",
+      "title": "Admin-only Referrals CSV export (download all referrals)",
+      "synonyms": [
+        "Export Referrals button",
+        "referralsCsvExport",
+        "CSV download"
+      ],
+      "description": "Adds an Admin-only backend method that returns a CSV export of all referrals (single header row + one row per referral, using only existing backend referral fields). Frontend adds actor binding + React Query hook/mutation and an Admin Referrals UI action/button labeled \"Export Referrals\" that downloads the CSV with basic error handling; backend denies/traps for non-admin callers.",
       "reqIds": [
-        "REQ-36"
+        "REQ-30",
+        "REQ-31",
+        "REQ-32",
+        "REQ-33"
       ],
       "version": 1
     },
     {
-      "id": "feature-in-the-frontend-intakes-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-intakes-in-the-intake-detail-view-and-in-the-admin-data-table-view-using-english-labels-exactly-last-updated-and-last-updated-by",
-      "title": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "id": "IF-28",
+      "title": "Case Manager assignment for Intakes (required, Staff/Admin assignable, staff “My Clients” filtering)",
+      "synonyms": [
+        "intake case manager",
+        "my clients filter",
+        "assignable case managers"
+      ],
+      "description": "Adds a required Case Manager field to the Intake domain and UI. Backend enforces that each Intake has an assigned Case Manager who is a Staff/Admin user and exposes a non-admin-restricted query for Staff to fetch assignable case managers. Frontend updates Intake create/edit/assignment flows to require selecting a Case Manager, displays clear “Unassigned”/assignment state throughout Intake list/detail, and adds a Staff filter/view to show only Intakes assigned to the current user.",
       "reqIds": [
-        "REQ-37"
+        "REQ-21",
+        "REQ-22",
+        "REQ-23",
+        "REQ-24",
+        "REQ-25"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-frontend-canister-type-bindings-and-any-related-typescript-types-so-the-new-backend-fields-required-for-last-updated-and-last-updated-by-are-available-in-components-that-render-referrals-and-intakes-without-breaking-existing-queries-mutations",
-      "title": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
+      "id": "IF-29",
+      "title": "Staff-only Training + Employment workflow (training status, checklists, track selection, employment fields, weekly check-ins)",
+      "synonyms": [
+        "TrainingTab",
+        "EmploymentTab",
+        "training record",
+        "weekly check-ins"
+      ],
+      "description": "Implements a simplified staff-only Training + Employment workflow with a persistent backend training record keyed to a client-linked identifier (e.g., Intake.id). Supports a single-select client status (Referred, Intake Complete, Training In Progress, Training Complete, Placement Ready, Employed, Completed), core and track-specific checklists, staff notes, employment details (employer, start date, shift, transportation), and weekly check-in entries. Frontend adds mobile-friendly Staff dashboard tabs for Training and Employment, React Query hooks/bindings for all training/employment endpoints, and UI gating rules (training sections only after Intake Complete/Training In Progress; placement fields after Training Complete/Placement Ready; check-ins only while Employed).",
       "reqIds": [
-        "REQ-38"
+        "REQ-41",
+        "REQ-42",
+        "REQ-43",
+        "REQ-44",
+        "REQ-45",
+        "REQ-46",
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-30",
+      "title": "Staff-only Placement & Employment screen (placement status, employment fields, weekly check-ins gated by Employed)",
+      "synonyms": [
+        "PlacementEmploymentTab",
+        "placement status",
+        "placement & employment tracking"
+      ],
+      "description": "Adds a Staff-only \"Placement & Employment\" UI and supporting backend model/APIs to view and update client placement/employment data, including placement_status (Not Placed/Placed/Employed/Completed), employer/job details, start date, shift schedule, transportation plan, placement notes, and a Weekly Check-In section that is only shown/usable when placement_status is Employed. Includes React Query hooks/bindings and cache invalidation so edits refresh the selected client record; backend upgrade/migration preserves existing records and backfills new fields with safe defaults.",
+      "reqIds": [
+        "REQ-48",
+        "REQ-49",
+        "REQ-50",
+        "REQ-51",
+        "REQ-52",
+        "REQ-53",
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-staff-placement-employment-screen-display-and-allow-editing-of-the-new-needs-attention-yes-no-field-placed-next-to-the-existing-follow-up-notes-field-keep-user-facing-text-in-english",
+      "title": "On the Staff Placement & Employment screen, display and allow editing of the new `needs_attention` (Yes/No) field placed next to the existing `follow_up_notes` field; keep user-facing text in English.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-types-actor-bindings-and-react-query-wiring-so-the-placement-employment-screen-can-read-and-save-needs-attention-without-typescript-errors-using-the-existing-placement-employment-query-save-mutation-flow",
+      "title": "Update frontend types/actor bindings and React Query wiring so the Placement & Employment screen can read and save `needs_attention` without TypeScript errors, using the existing Placement/Employment query + save mutation flow.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-staff-placement-employment-screen-frontend-src-components-placementemploymenttab-tsx-to-group-the-existing-fields-needs-attention-yes-no-and-follow-up-notes-text-into-a-single-ui-section-titled-follow-up-and-support-with-the-fields-ordered-as-1-needs-attention-yes-no-2-follow-up-notes-text-add-helper-text-directly-under-the-section-title-that-reads-use-this-section-to-flag-and-document-clients-who-need-follow-up-or-additional-support-do-not-add-any-new-fields-backend-logic-mutations-queries-or-screens-this-is-a-layout-content-change-only",
+      "title": "Update the Staff Placement & Employment screen (frontend/src/components/PlacementEmploymentTab.tsx) to group the existing fields `needs_attention` (Yes/No) and `follow_up_notes` (text) into a single UI section titled \"Follow-Up and Support\", with the fields ordered as: (1) needs_attention (Yes/No), (2) follow_up_notes (text). Add helper text directly under the section title that reads: “Use this section to flag and document clients who need follow-up or additional support.” Do not add any new fields, backend logic, mutations, queries, or screens; this is a layout/content change only.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-public-no-login-referral-submission-form-at-public-referral-to-display-two-new-fields-without-altering-any-existing-fields-or-submission-behavior-1-a-required-checkbox-field-named-referral-partner-confirm-with-the-label-text-i-am-a-case-manager-or-referral-partner-submitting-this-referral-and-2-an-optional-text-input-field-named-referring-agency-with-the-label-text-agency-or-organization-name-optional",
+      "title": "Update the public (no-login) Referral submission form at /public/referral to display two new fields without altering any existing fields or submission behavior: (1) a required checkbox field named `referral_partner_confirm` with the label text “I am a case manager or referral partner submitting this referral.” and (2) an optional text input field named `referring_agency` with the label text “Agency or organization name (optional)”.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-hidden-honeypot-text-field-named-website-to-the-public-no-login-referral-submission-page-at-frontend-src-pages-publicreferralpage-tsx-such-that-the-field-is-not-visible-or-accessible-to-normal-users-no-label-no-visible-ui-not-reachable-via-keyboard-tab-navigation-but-is-still-part-of-the-html-form-dom",
+      "title": "Add a hidden honeypot text field named `website` to the public (no-login) Referral submission page at `frontend/src/pages/PublicReferralPage.tsx` such that the field is not visible or accessible to normal users (no label, no visible UI, not reachable via keyboard/tab navigation), but is still part of the HTML form DOM.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-public-referral-form-submit-handler-in-frontend-src-pages-publicreferralpage-tsx-to-ignore-or-reject-submissions-when-the-honeypot-field-website-is-non-empty-after-trimming-when-website-is-filled-the-app-must-not-call-the-existing-referral-creation-mutation-usecreatereferral-actor-createreferral",
+      "title": "Update the public referral form submit handler in `frontend/src/pages/PublicReferralPage.tsx` to ignore or reject submissions when the honeypot field `website` is non-empty (after trimming). When `website` is filled, the app must not call the existing referral creation mutation (`useCreateReferral` / `actor.createReferral`).",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-public-no-login-referral-submission-page-at-frontend-src-pages-publicreferralpage-tsx-to-include-a-single-normal-visible-text-input-field-named-website-labeled-exactly-website-leave-blank-placed-at-the-bottom-of-the-form-below-all-existing-fields-and-above-the-submit-button-or-directly-above-the-footer-area-within-the-form-the-field-must-be-visually-unobtrusive-e-g-small-secondary-styling-consistent-with-the-existing-tailwind-shadcn-form-look-but-it-must-remain-a-standard-visible-form-field",
+      "title": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-avoid-any-honeypot-behavior-tied-to-the-website-field-on-the-public-referral-form-do-not-hide-the-field-do-not-block-submission-do-not-ignore-submissions-and-do-not-add-any-conditional-logic-based-on-website-including-trim-checks-submitting-the-form-must-always-follow-the-existing-usecreatereferral-actor-createreferral-mutation-flow-exactly-as-it-does-today",
+      "title": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
+      "reqIds": [
+        "REQ-79"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Add Case Manager assignment to Intakes (required field; assignable to Staff/Admin users; show unassigned clearly; Staff filter 'My Clients')",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Make “Case Manager” a required attribute for every Intake and enforce that the assigned Case Manager is a user with role Staff or Admin.",
-      "reqIds": [
-        "REQ-21"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Expose a backend query that returns the list of assignable Case Managers (Staff and Admin users) in a way that Staff can use for Intake assignment, without requiring Admin-only access.",
-      "reqIds": [
-        "REQ-22"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Update the Intake creation workflow UI to include a required “Case Manager” field that only allows selecting Staff/Admin users, and ensure new Intakes are created with a Case Manager set.",
-      "reqIds": [
-        "REQ-23"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Show unassigned Intakes clearly throughout the Intake list and Intake detail view (e.g., explicit “Unassigned” label/badge/visual emphasis).",
-      "reqIds": [
-        "REQ-24"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add a Staff-facing Intake filter “My Clients” that, when enabled, shows only Intakes where the current user is the assigned Case Manager.",
-      "reqIds": [
-        "REQ-25"
-      ],
-      "status": "pending"
-    },
     {
       "id": "AR-7",
       "summary": "Add Admin-only CSV data export for Referrals, Intakes, and Bed usage with date range filtering.",
@@ -423,86 +515,251 @@
     },
     {
       "id": "AR-12",
-      "summary": "Add a basic Admin-only 'Export Referrals' button that downloads all referrals as a CSV (no filters; simple headers only).",
+      "summary": "Add an embedded Training workflow (referral→employment path) with new client statuses, gating rules, and Staff Training Dashboard + Client Training Record (core checklist, track assignment + track-specific checklist, staff notes, evidence uploads, progress indicators; mobile-friendly).",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-13",
-      "summary": "Add an admin-only backend method that returns a CSV export of all referrals with a single header row and one row per referral (no filters). The method must trap/deny for non-admin callers.",
-      "reqIds": [
-        "REQ-30"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Define the CSV column headers for the referrals export and ensure every referral row aligns to those headers. Keep the schema minimal and limited to existing referral fields available in the backend (do not introduce new referral data fields solely for export).",
-      "reqIds": [
-        "REQ-31"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-15",
-      "summary": "Add an Admin-only UI action in the Admin Referrals area: render a button labeled \"Export Referrals\" that triggers a download of the CSV file containing all referrals.",
-      "reqIds": [
-        "REQ-32"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-16",
-      "summary": "Add the necessary frontend actor binding and a React Query hook/mutation to call the backend referrals CSV export method, and wire it to the \"Export Referrals\" button with basic error handling.",
-      "reqIds": [
-        "REQ-33"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Display “Last updated by” (user) and “Last updated” timestamp on Referral and Intake records in the UI.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
+      "summary": "Add a persistent Training Workflow domain model in the Motoko backend that is embedded into the existing client flow from referral to employment, including a single-select client status field with the following allowed values (exact labels): Referred, Intake Complete, Job Readiness Training, Track Assigned, Training Complete, Placement Ready, Employed, Stabilized, Completed.",
       "reqIds": [
         "REQ-34"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-19",
-      "summary": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
+      "id": "AR-14",
+      "summary": "Implement backend CRUD/query methods needed for the staff Training Dashboard and Client Training Record: (1) list training records for staff with client identifier/name and current status, plus core and track completion percentages; (2) fetch a single client training record; (3) update core checklist items; (4) set/update track assignment; (5) update track-specific checklist items; (6) add/edit training notes; (7) upload and list evidence attachments for the training record.",
       "reqIds": [
         "REQ-35"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Define and enforce the Training workflow gating rules across backend and frontend behaviors: (1) Training screens only appear after Intake Complete; (2) Track-specific training only appears after Track Assigned; (3) Placement actions are locked until Training Complete; (4) Weekly check-ins only appear while Employed.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Create a staff-only Training Dashboard screen in the React frontend that lists clients and shows (a) each client’s current status, (b) % completion for Core Job Readiness Training, (c) % completion for Track Training, and (d) a button/link to open the Client Training Record for that client.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Create a staff-only Client Training Record screen in the React frontend with a simple vertical, mobile-friendly layout containing the following sections: (A) Core Job Readiness Training checklist (required for all); (B) Track Assignment single-select with options: Janitorial/Cleaning, Property Maintenance Support, Food Service/Prep; (C) Track-Specific Training checklist that auto-switches based on selected track; (D) Training Notes (staff notes); (E) Evidence Uploads for optional files/photos; include clear progress indicators for core and track completion.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add Weekly Check-ins UI to the Client Training Record that is visible only while the client status is Employed, allowing staff to record a weekly check-in entry and view previous entries in chronological order.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Integrate the Training workflow screens into the existing Staff dashboard navigation (and routing) in a way that matches current role-based routing and access gating, ensuring all user-facing text is in English.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Add an Admin-only “Initialize Facility” one-time action that creates the standard bed inventory (12 beds: 4 Medical Step-Down #1–4, 8 Workforce Housing #1–8) only when current bed count is 0; enforce uniqueness on (Program, Bed number); hide/disable action once beds exist; no other demo data.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Add a backend Admin-only method that initializes the standard bed inventory for a specific facility, creating beds only when the current global bed count is 0.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Implement the standard bed inventory created by initialization as: 4 Medical Step-Down beds numbered 1–4 and 8 Workforce Housing beds numbered 1–8, with uniqueness enforced on (Program + Bed number).",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Add an Admin-only frontend action labeled \"Initialize Facility\" in the Facilities Management area that triggers the backend initialization for a selected facility, and hide or disable the action once any beds exist.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Add a React Query mutation hook and actor binding for the new backend initialization method, and ensure appropriate cache invalidation for beds and related occupancy/metrics views.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Add a simple Staff-only Follow-Up Support Log: per-client Follow-Ups entries (date, type, notes, issue_resolved) and a mobile-friendly Follow-Ups screen to list/add entries (no automation).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Add a new backend Follow-Up domain model stored per client (use the existing client identifier used in staff workflows, i.e., the Intake id selected in Training/Placement screens). Each Follow-Up entry must include: follow_up_date (date-only), follow_up_type (Job Check-In, Housing Check-In, Employer Contact, Other), notes (text), and issue_resolved (yes/no).",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Implement backend methods for staff follow-ups with staff-only authorization enforcement consistent with existing patterns (e.g., use the existing staff/admin checks used by getAllIntakes/training methods): (1) listFollowUps(clientId) returning all follow-ups for that client, and (2) addFollowUp(clientId, followUp) to append a new follow-up entry.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Add a new Staff-only UI screen/tab named \"Follow-Ups\" in the Staff Dashboard (frontend/src/pages/StaffDashboard.tsx) that is mobile-friendly and contains: (1) a client selector (based on existing intakes list), (2) a list of past follow-ups for the selected client, and (3) a button/form to add a new follow-up entry with only date, type, notes, and yes/no fields.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Add React Query hooks and actor bindings in frontend/src/hooks/useQueries.ts for the new backend Follow-Ups methods, including cache invalidation so the follow-ups list refreshes after a new entry is added.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "If the Follow-Ups data requires new stable state across canister upgrades given the project’s persistence approach, add/extend backend migration support so existing deployed canisters upgrade safely without losing existing data or trapping during upgrade.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Add simple Follow-Up Notes fields (last_follow_up_date, follow_up_notes, follow_up_needed) to each client and display/edit them on the Staff Placement & Employment screen (no related records, no automation, mobile-friendly).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Extend the per-client Placement/Employment data model in the backend so each client (i.e., the Intake id used as clientId in staff workflows) has three new persisted fields: (1) last_follow_up_date (date-only), (2) follow_up_notes (text), and (3) follow_up_needed (yes/no). Keep this as simple embedded fields (no related records, no automation).",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Update backend write/update behavior so staff can save edits to the three follow-up fields from the existing Placement & Employment save action (i.e., the same save button should persist these fields together with the placement/employment record). Enforce staff-only authorization consistent with existing training/placement methods (isStaffOrAdmin).",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "Add a small, mobile-friendly 'Follow-Up Notes' section to the staff Placement & Employment screen (frontend/src/components/PlacementEmploymentTab.tsx) that displays and allows editing of: Last follow-up date (date picker), Follow-up needed (Yes/No select), and Follow-up notes (multiline text).",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Update frontend actor bindings/types and React Query usage so the Placement & Employment screen can read and save the new follow-up fields without TypeScript errors (update the PlacementEmployeeRecord shape usage in frontend/src/hooks/useQueries.ts and any generated backend type imports as needed).",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "If changing the persisted Training/Placement record schema requires a canister upgrade migration, add/adjust backend migration support so existing deployed state upgrades safely, and existing clients receive sensible defaults for the new follow-up fields (no traps on upgrade).",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Add a persisted per-client needs_attention (yes/no) field and display/edit it on the Staff Placement & Employment screen next to follow_up_notes; no other logic or new screens.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-46",
+      "summary": "Add a persisted per-client boolean field `needs_attention` (Yes/No) to the existing Placement/Employment record data model keyed by the existing client identifier (the Intake id used as clientId in staff workflows).",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-47",
+      "summary": "Update the existing Placement/Employment create/update/save method(s) so `needs_attention` is saved together with the other Placement/Employment fields using the existing save action; do not introduce any new automation or side effects.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "If the Placement/Employment record schema is stored in stable state, add/adjust canister upgrade migration logic to include the new `needs_attention` field for existing stored records with a sensible default value, and ensure upgrade does not trap.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Tidy the Staff Placement & Employment screen layout by grouping needs_attention (Yes/No) and follow_up_notes (text) under a new section titled \"Follow-Up and Support\", ordered needs_attention then follow_up_notes, with helper text: “Use this section to flag and document clients who need follow-up or additional support.” No new fields/logic/screens.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Add a public, sharable (no-login) Referral Form URL that can be embedded/linked from an external website; submissions should create Referral records in the backend and appear in the app’s Referrals queue for staff/admin review.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Update the public (no-login) Referral submission form to add (1) a required checkbox `referral_partner_confirm` labeled “I am a case manager or referral partner submitting this referral.” and (2) an optional text field `referring_agency` labeled “Agency or organization name (optional)”, without changing any existing fields or submission logic.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "Simplify public referral form spam honeypot: keep a single normal (visible) text field named `website`, labeled “Website (leave blank)” and placed at the bottom of the form; no hidden behavior, no conditional logic, and do not reject/ignore submissions based on this field.",
+      "reqIds": [],
+      "status": "pending"
     }
   ],
-  "architectural_notes": [
-    "Frontend uses TanStack React Query with custom hooks (useQueries.ts) for each backend operation; mutations invalidate relevant query keys to keep UI consistent.",
-    "Actor creation is encapsulated in useActor; actor is recreated per-identity and triggers global query invalidation/refetch when identity changes.",
-    "Authentication uses DFINITY Internet Identity via an AuthClient provider (InternetIdentityProvider) with persisted session identity and explicit login/logout controls.",
-    "Backend is a single Motoko actor composed via mixins: MixinAuthorization for access-control bootstrap and role querying, plus a Caffeine blob-storage mixin for blob GC and cycles refill mechanics.",
-    "Two parallel authorization concepts exist: (1) AccessControl.UserRole (#admin/#user/#guest) for basic permission gating; (2) application roles stored in UserProfile.role (Admin/Staff/PartnerAgency) for feature-level access restrictions.",
-    "Role-based routing in App.tsx gates access by requiring both a non-guest AccessControl role and a non-null UserProfile.role; otherwise users see profile setup or an access-pending screen.",
-    "Operational UIs are organized as tabbed dashboards (AdminDashboard/StaffDashboard/PartnerDashboard) with shared components and consistent loading/empty states.",
-    "Beds are modeled with program type and archived state; active-bed limits are enforced server-side (MaxActiveBeds=12) and mirrored in the UI.",
-    "Caffeine blob-storage integration exposes admin/gateway maintenance endpoints (authorized principal list refresh, dead blob listing/pruning, GC trigger) and a certificate creation helper for uploads.",
-    "Frontend template includes shadcn/ui component library sources plus custom ESLint rules (e.g., no BigInt in React Query keys; require InternetIdentityProvider) to enforce app conventions during development/build."
-  ],
-  "known_issues": [
-    "Duplicate role systems can drift: AccessControl role (#admin/#user) is distinct from UserProfile.role (Admin/Staff/PartnerAgency); App.tsx checks both, which can lead to confusing access states if one is set without the other.",
-    "Intake program selection in the UI (IntakesTab) is required but not sent to the backend; the backend Intake type does not store program, so program-based bed assignment context is not persisted.",
-    "assignBedToIntake does not validate that the selected bed's program matches any intake program (and no intake program exists in backend), so cross-program assignment is possible.",
-    "Public createAccessRequest endpoint has no visible anti-spam/rate limiting controls.",
-    "Blob storage cashier env var name appears inconsistent/typo-prone (\"CAFFFEINE_STORAGE_CASHIER_PRINCIPAL\"), which could cause runtime traps if deployment expects a different name.",
-    "Partner 'My Referrals' endpoint returns all referrals for Staff/Admin users (not just theirs), which may be unexpected given the name."
-  ],
-  "isFixRequest": false,
   "gameProjectType": "none",
   "projectName": "Neighbors Light",
   "clarification_mode": "instant",

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserProfile, Referral, Intake, Bed, Facility, Client, Status, UserRole, Program, Document, AccessRequest, Status__1, UserApprovalInfo, ActivityLogEntry, PartnerAgencyProfile, StatusHistoryEntry, IntakeStatusHistoryEntry, AdminStatusInfo } from '../backend';
+import type { UserProfile, Referral, Intake, Bed, Facility, Client, Status, UserRole, Program, Document, AccessRequest, Status__1, UserApprovalInfo, ActivityLogEntry, PartnerAgencyProfile, StatusHistoryEntry, IntakeStatusHistoryEntry, AdminStatusInfo, TrainingRecord, TrainingChecklist, Variant_notStarted_complete_inProgress, Variant_foodService_maintenance_janitorial, PlacementEmployeeRecord } from '../backend';
 import { Principal } from '@dfinity/principal';
 
 // Admin Status Queries
@@ -883,6 +883,68 @@ export function useCreateFacility() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['facilities'] });
+    },
+  });
+}
+
+// Training and Placement/Employment Queries (Staff only)
+export function useGetTrainingRecord(clientId: bigint | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<TrainingRecord | null>({
+    queryKey: ['trainingRecord', clientId?.toString()],
+    queryFn: async () => {
+      if (!actor || !clientId) return null;
+      return actor.getTrainingRecord(clientId);
+    },
+    enabled: !!actor && !isFetching && !!clientId,
+  });
+}
+
+export function useUpdateTrainingRecord() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      trainingStatus,
+      track,
+      checklist,
+      staffNotes,
+    }: {
+      clientId: bigint;
+      trainingStatus: Variant_notStarted_complete_inProgress;
+      track: Variant_foodService_maintenance_janitorial;
+      checklist: TrainingChecklist;
+      staffNotes: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateTrainingRecord(clientId, trainingStatus, track, checklist, staffNotes);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['trainingRecord', variables.clientId.toString()] });
+    },
+  });
+}
+
+export function useUpdateClientPlacementRecord() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      placementRecord,
+    }: {
+      clientId: bigint;
+      placementRecord: PlacementEmployeeRecord;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateClientPlacementRecord(clientId, placementRecord);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['trainingRecord', variables.clientId.toString()] });
     },
   });
 }

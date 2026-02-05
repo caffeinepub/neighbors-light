@@ -7,10 +7,17 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface Client {
-    contactInfo: string;
-    name: string;
-    notes?: string;
+export interface WeeklyCheckIn {
+    weeklyNotes: string;
+    attendanceOk: boolean;
+    issuesReported: boolean;
+}
+export interface TrainingRecord {
+    track: Variant_foodService_maintenance_janitorial;
+    staffNotes: string;
+    placement: PlacementEmployeeRecord;
+    checklist: TrainingChecklist;
+    trainingStatus: Variant_notStarted_complete_inProgress;
 }
 export type Time = bigint;
 export interface IntakeStatusHistoryEntry {
@@ -31,60 +38,22 @@ export interface AccessRequest {
     assignedUser?: Principal;
 }
 export type Document = Uint8Array;
-export interface Facility {
-    id: bigint;
-    contactInfo: string;
-    name: string;
-    facilityType: string;
-    address: string;
-}
-export interface Intake {
-    id: bigint;
-    exitDate?: Time;
-    status: string;
-    client: Client;
-    createdAt: Time;
-    submittedBy: Principal;
-    statusHistory: Array<IntakeStatusHistoryEntry>;
-    reviewedBy?: Principal;
-    lastUpdatedBy?: Principal;
-    updatedAt: Time;
-    details: string;
-    exitNotes?: string;
-    internalNotes?: string;
-    assignedBedId?: bigint;
-    caseManager?: Principal;
-}
-export interface AdminStatusInfo {
-    callerPrincipal: Principal;
-    isAdmin: boolean;
-    allAdminPrincipals: Array<Principal>;
-}
-export interface ActivityLogEntry {
-    entity: EntityType;
-    action: ActionType;
-    user: Principal;
-    timestamp: Time;
-    recordId: bigint;
+export interface PlacementEmployeeRecord {
+    placementNotes: string;
+    jobRole: string;
+    follow_up_notes?: string;
+    weeklyCheckIn?: WeeklyCheckIn;
+    employerName: string;
+    shiftSchedule: string;
+    placementStatus: PlacementStatus;
+    transportationPlan: string;
+    needs_attention: boolean;
+    startDate?: string;
 }
 export interface StatusHistoryEntry {
     status: Status;
     updatedBy?: Principal;
     timestamp: Time;
-}
-export interface UserApprovalInfo {
-    status: ApprovalStatus;
-    principal: Principal;
-}
-export interface Bed {
-    id: bigint;
-    status: Status__1;
-    occupant?: Client;
-    lastUpdated: Time;
-    bedNumber: string;
-    isArchived: boolean;
-    facilityId: bigint;
-    program: Program;
 }
 export interface Referral {
     id: bigint;
@@ -103,14 +72,74 @@ export interface Referral {
     assignedStaff?: Principal;
     programRequested: string;
     internalNotes?: string;
+    convertedIntakeId?: bigint;
     requestMoreInfo?: string;
     reason: string;
+}
+export interface Client {
+    contactInfo: string;
+    name: string;
+    notes?: string;
 }
 export interface PartnerAgencyProfile {
     primaryContactName: string;
     email: string;
     agencyName: string;
     phone: string;
+}
+export interface Facility {
+    id: bigint;
+    contactInfo: string;
+    name: string;
+    facilityType: string;
+    address: string;
+}
+export interface AdminStatusInfo {
+    callerPrincipal: Principal;
+    isAdmin: boolean;
+    allAdminPrincipals: Array<Principal>;
+}
+export interface Intake {
+    id: bigint;
+    exitDate?: Time;
+    status: string;
+    client: Client;
+    createdAt: Time;
+    submittedBy: Principal;
+    statusHistory: Array<IntakeStatusHistoryEntry>;
+    reviewedBy?: Principal;
+    lastUpdatedBy?: Principal;
+    updatedAt: Time;
+    details: string;
+    exitNotes?: string;
+    internalNotes?: string;
+    assignedBedId?: bigint;
+    caseManager?: Principal;
+}
+export interface ActivityLogEntry {
+    entity: EntityType;
+    action: ActionType;
+    user: Principal;
+    timestamp: Time;
+    recordId: bigint;
+}
+export interface UserApprovalInfo {
+    status: ApprovalStatus;
+    principal: Principal;
+}
+export interface Bed {
+    id: bigint;
+    status: Status__1;
+    occupant?: Client;
+    lastUpdated: Time;
+    bedNumber: string;
+    isArchived: boolean;
+    facilityId: bigint;
+    program: Program;
+}
+export interface TrainingChecklist {
+    track: Array<boolean>;
+    core: Array<boolean>;
 }
 export interface UserProfile {
     name: string;
@@ -134,6 +163,12 @@ export enum EntityType {
     referral = "referral",
     intake = "intake"
 }
+export enum PlacementStatus {
+    placed = "placed",
+    completed = "completed",
+    employed = "employed",
+    notPlaced = "notPlaced"
+}
 export enum Program {
     medicalStepDown = "medicalStepDown",
     workforceHousing = "workforceHousing"
@@ -154,6 +189,16 @@ export enum UserRole {
     admin = "admin",
     user = "user",
     guest = "guest"
+}
+export enum Variant_foodService_maintenance_janitorial {
+    foodService = "foodService",
+    maintenance = "maintenance",
+    janitorial = "janitorial"
+}
+export enum Variant_notStarted_complete_inProgress {
+    notStarted = "notStarted",
+    complete = "complete",
+    inProgress = "inProgress"
 }
 export enum Variant_pending_approved_rejected {
     pending = "pending",
@@ -200,6 +245,7 @@ export interface backendInterface {
     getReferral(referralId: bigint): Promise<Referral>;
     getReferralForPartnerAgency(referralId: bigint): Promise<Referral>;
     getReferralStatusHistory(referralId: bigint): Promise<Array<StatusHistoryEntry>>;
+    getTrainingRecord(clientId: bigint): Promise<TrainingRecord | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isAdmin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
@@ -207,6 +253,7 @@ export interface backendInterface {
     isRequestApproved(userId: Principal): Promise<boolean>;
     listAdmins(): Promise<Array<Principal>>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
+    listClientsForTraining(): Promise<Array<[bigint, string]>>;
     markIntakeExited(intakeId: bigint, exitDate: Time, exitNotes: string): Promise<void>;
     rejectRequest(requestId: bigint, rejectionReason: string): Promise<void>;
     removeUserRole(user: Principal): Promise<void>;
@@ -219,8 +266,10 @@ export interface backendInterface {
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     updateBed(bedId: bigint, newProgram: Program, newNumber: string, newStatus: Status__1, newOccupant: Client | null, newArchived: boolean): Promise<void>;
     updateBedStatus(bedId: bigint, status: Status__1): Promise<void>;
+    updateClientPlacementRecord(clientId: bigint, placementRecord: PlacementEmployeeRecord): Promise<void>;
     updateReferral(referralId: bigint, referrerName: string, clientName: string, reason: string, programRequested: string, updatedClient: Client, updatedSource: string): Promise<void>;
     updateReferralStatus(referralId: bigint, status: Status, assignedStaff: Principal | null): Promise<void>;
     updateReferralStatusWithMessage(referralId: bigint, status: Status, message: string | null): Promise<void>;
+    updateTrainingRecord(clientId: bigint, trainingStatus: Variant_notStarted_complete_inProgress, track: Variant_foodService_maintenance_janitorial, checklist: TrainingChecklist, staffNotes: string): Promise<void>;
     uploadReferralDocuments(referralId: bigint, newDocuments: Array<Document>): Promise<void>;
 }

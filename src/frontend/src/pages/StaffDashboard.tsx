@@ -3,10 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StaffOverviewCompact from '../components/StaffOverviewCompact';
+import StaffMyWorkTab from '../components/StaffMyWorkTab';
 import ReferralsTab from '../components/ReferralsTab';
 import IntakesTab from '../components/IntakesTab';
 import BedsTab from '../components/BedsTab';
-import { LayoutDashboard, Users, ClipboardList, BedDouble } from 'lucide-react';
+import TrainingTab from '../components/TrainingTab';
+import PlacementEmploymentTab from '../components/PlacementEmploymentTab';
+import { LayoutDashboard, Users, ClipboardList, BedDouble, Briefcase, GraduationCap, Building2 } from 'lucide-react';
 
 export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -25,10 +28,14 @@ export default function StaffDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+            <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
               <TabsTrigger value="overview" className="gap-2">
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="mywork" className="gap-2">
+                <Briefcase className="h-4 w-4" />
+                <span className="hidden sm:inline">My Work</span>
               </TabsTrigger>
               <TabsTrigger value="referrals" className="gap-2">
                 <Users className="h-4 w-4" />
@@ -42,10 +49,22 @@ export default function StaffDashboard() {
                 <BedDouble className="h-4 w-4" />
                 <span className="hidden sm:inline">Beds</span>
               </TabsTrigger>
+              <TabsTrigger value="training" className="gap-2">
+                <GraduationCap className="h-4 w-4" />
+                <span className="hidden sm:inline">Training</span>
+              </TabsTrigger>
+              <TabsTrigger value="placement" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Placement & Employment</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               <StaffOverviewCompact onNavigateToTab={setActiveTab} />
+            </TabsContent>
+
+            <TabsContent value="mywork">
+              <StaffMyWorkTab />
             </TabsContent>
 
             <TabsContent value="referrals">
@@ -58,6 +77,14 @@ export default function StaffDashboard() {
 
             <TabsContent value="beds">
               <BedsTab isAdmin={false} />
+            </TabsContent>
+
+            <TabsContent value="training">
+              <TrainingTab />
+            </TabsContent>
+
+            <TabsContent value="placement">
+              <PlacementEmploymentTab />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,83 +1,38 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Display last updated by + timestamp for Referrals and Intakes (frontend)",
+  "title": "Public referral form: visible non-blocking Website field (no honeypot logic)",
   "requirements": [
     {
-      "id": "REQ-36",
-      "summary": "Show \"Last updated\" timestamp and \"Last updated by\" user display name in the referral detail view.",
+      "id": "REQ-78",
+      "summary": "Add a visible, visually unobtrusive Website (leave blank) text input named `website` at the bottom of the public referral form.",
       "acceptanceCriteria": [
-        "Opening a referral detail view shows a \"Last updated\" timestamp derived from the referral updatedAt value.",
-        "Opening a referral detail view shows \"Last updated by\" derived from the referral's last-updated-by principal, rendered via existing user lookup logic (fall back to a shortened principal string when name is unavailable, and show \"System\" when no principal exists).",
-        "All user-facing labels are in English and match the required strings."
+        "The public referral form renders a visible text input with `id=\"website\"` and label text exactly “Website (leave blank)”",
+        "The `website` input appears at the bottom of the form (after existing fields) and is visually unobtrusive while still readable/usable",
+        "No other honeypot/spam fields are present on this page"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ReferralsTab.tsx",
+          "path": "frontend/src/pages/PublicReferralPage.tsx",
           "operation": "modify",
-          "description": "In the referral detail dialog, add UI rows labeled exactly \"Last updated\" (from selectedReferral.updatedAt) and \"Last updated by\" (from selectedReferral.lastUpdatedBy resolved to a display name with fallback to shortened principal; show \"System\" when missing). Ensure rendering is null/undefined-safe for legacy records."
-        },
-        {
-          "path": "frontend/src/utils/userDisplay.ts",
-          "operation": "create",
-          "description": "Add a shared helper to resolve a principal to a user display string using the existing all-users lookup behavior: return the matched profile name when available, otherwise a shortened principal string, and return \"System\" when the principal is null/undefined. This utility will be used by referrals and intakes to keep fallback behavior consistent."
+          "description": "Add a new controlled `website` text field to the public referral form UI using existing shadcn/ui `Label` + `Input`, labeled exactly “Website (leave blank)”, positioned after all existing fields and immediately above the submit button (or directly above the form’s footer area). Apply small/secondary Tailwind styling (e.g., smaller text and muted tone) so it remains visible but unobtrusive. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-37",
-      "summary": "Show \"Last updated\" and \"Last updated by\" in the intake detail view and in the Admin Intake Data View table.",
+      "id": "REQ-79",
+      "summary": "Ensure the new `website` field has no honeypot behavior and does not alter existing validation or submission/mutation flow.",
       "acceptanceCriteria": [
-        "Intake detail view shows \"Last updated\" based on intake.updatedAt and \"Last updated by\" based on the intake last-updated-by principal with the same fallback behavior as in referrals.",
-        "Admin Intake Data View table includes a visible \"Last updated\" value and \"Last updated by\" value for each row (either as new columns or clearly readable row metadata).",
-        "All user-facing labels are in English and match the required strings."
+        "Filling or not filling the `website` field does not change validation behavior or submission behavior",
+        "`handleSubmit` does not contain any conditional checks that branch on `website` content (no rejection/early return/skip-mutation logic based on `website`)",
+        "The referral creation mutation is still called on valid submissions regardless of `website` value",
+        "The `website` value is not required and does not create validation errors"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/IntakesTab.tsx",
+          "path": "frontend/src/pages/PublicReferralPage.tsx",
           "operation": "modify",
-          "description": "In the intake detail view, add UI fields labeled exactly \"Last updated\" (from selectedIntake.updatedAt) and \"Last updated by\" (from selectedIntake.lastUpdatedBy resolved via shared user display helper with the same fallback behavior as referrals). Keep existing timeline info intact, but ensure the required labels are present and accurate."
-        },
-        {
-          "path": "frontend/src/components/IntakesDataViewTable.tsx",
-          "operation": "modify",
-          "description": "Update the Admin Intake Data View table to display \"Last updated\" (from intake.updatedAt) and \"Last updated by\" (from intake.lastUpdatedBy resolved via shared helper) for each row, as new visible columns. Ensure null/undefined-safe rendering for legacy records and keep labels exactly \"Last updated\" and \"Last updated by\"."
-        },
-        {
-          "path": "frontend/src/utils/userDisplay.ts",
-          "operation": "modify",
-          "description": "Extend/adjust the shared principal-to-display-name helper (if needed) to support intake contexts (same behavior as referrals), and reuse it in both intake detail and table views."
-        }
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "summary": "Update frontend canister type bindings and related TypeScript types so referrals and intakes include last-updated-by data without breaking existing usage.",
-      "acceptanceCriteria": [
-        "Frontend compiles with the updated Referral and Intake types that include the new last-updated-by field.",
-        "Existing referrals/intakes list and detail views continue to load successfully.",
-        "The UI displays last-updated information without runtime errors when the last-updated-by field is null/undefined."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/backend.d.ts",
-          "operation": "modify",
-          "description": "Verify and, if necessary, update the generated/declared TypeScript types for Referral and Intake to include an optional lastUpdatedBy principal field that matches the backend return shape. Ensure updatedAt remains present and is typed consistently so existing queries/mutations continue compiling."
-        },
-        {
-          "path": "frontend/src/components/ReferralsTab.tsx",
-          "operation": "modify",
-          "description": "Adjust referral detail rendering to rely on typed fields (updatedAt, lastUpdatedBy) with optional chaining and safe fallbacks, preventing runtime errors when lastUpdatedBy is null/undefined."
-        },
-        {
-          "path": "frontend/src/components/IntakesTab.tsx",
-          "operation": "modify",
-          "description": "Adjust intake detail rendering to rely on typed fields (updatedAt, lastUpdatedBy) with optional chaining and safe fallbacks, preventing runtime errors when lastUpdatedBy is null/undefined."
-        },
-        {
-          "path": "frontend/src/components/IntakesDataViewTable.tsx",
-          "operation": "modify",
-          "description": "Ensure the Intake table view uses the typed updatedAt/lastUpdatedBy fields safely (null/undefined-safe) and continues to render without breaking existing admin data view behavior."
+          "description": "Keep `handleSubmit` and validation flow unchanged with respect to submission: do not add any conditional logic based on `website`, do not add trimming/validation checks for it, and do not include it in the `validateReferralForm` call or the `useCreateReferral`/mutation payload. The field should remain optional and purely UI-level. Verify the component's usage instructions before implementing."
         }
       ]
     }

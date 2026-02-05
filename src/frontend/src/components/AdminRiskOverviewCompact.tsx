@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, ClipboardList, BedDouble, ArrowRight, AlertTriangle, UserX } from 'lucide-react';
+import { Users, ClipboardList, BedDouble, ArrowRight, AlertTriangle, UserX, FileCheck } from 'lucide-react';
 import { Status } from '../backend';
 import { isReferralAtRisk, isIntakeAtRisk, isBedAtRisk } from '../utils/atRisk';
 
@@ -39,6 +39,11 @@ export default function AdminRiskOverviewCompact({ onNavigateToTab }: AdminRiskO
   // Warning: Active intakes without case manager
   const intakesWithoutCaseManager = activeIntakes.filter(
     (i) => i.caseManager === undefined || i.caseManager === null
+  );
+
+  // Warning: Approved referrals not converted to intakes
+  const approvedNotConverted = referrals.filter(
+    (r) => r.status === Status.approved && !r.convertedIntakeId
   );
 
   const isLoading = referralsLoading || intakesLoading || bedsLoading;
@@ -125,6 +130,58 @@ export default function AdminRiskOverviewCompact({ onNavigateToTab }: AdminRiskO
           )}
         </CardContent>
       </Card>
+
+      {/* Warning: Approved Referrals Not Converted */}
+      {approvedNotConverted.length > 0 && (
+        <Card className="border-warning bg-warning/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileCheck className="h-5 w-5 text-warning" />
+              Approved, Not Converted
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onNavigateToTab('referrals')}
+              className="gap-1 text-xs"
+            >
+              View all
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
+                <span className="text-sm font-medium">Total approved</span>
+                <Badge variant="outline" className="border-warning text-warning">
+                  {approvedNotConverted.length}
+                </Badge>
+              </div>
+              {approvedNotConverted.slice(0, 5).map((referral) => (
+                <div
+                  key={referral.id.toString()}
+                  className="flex items-center justify-between rounded-lg border border-warning/50 bg-warning/5 p-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{referral.clientName}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {referral.partnerAgencyName}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="ml-2 flex-shrink-0 border-warning text-warning">
+                    Not converted
+                  </Badge>
+                </div>
+              ))}
+              {approvedNotConverted.length > 5 && (
+                <p className="text-center text-xs text-muted-foreground">
+                  +{approvedNotConverted.length - 5} more
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* At Risk: Intakes Without Assigned Bed */}
       <Card className={intakesWithoutBed.length > 0 ? 'border-warning bg-warning/5' : ''}>

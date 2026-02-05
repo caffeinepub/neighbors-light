@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-frontend-referrals-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-each-referral-in-the-referral-detail-view-using-english-labels-exactly-last-updated-and-last-updated-by",
-      "featureTitle": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "featureId": "feature-update-the-public-no-login-referral-submission-page-at-frontend-src-pages-publicreferralpage-tsx-to-include-a-single-normal-visible-text-input-field-named-website-labeled-exactly-website-leave-blank-placed-at-the-bottom-of-the-form-below-all-existing-fields-and-above-the-submit-button-or-directly-above-the-footer-area-within-the-form-the-field-must-be-visually-unobtrusive-e-g-small-secondary-styling-consistent-with-the-existing-tailwind-shadcn-form-look-but-it-must-remain-a-standard-visible-form-field",
+      "featureTitle": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
       "files": [
-        "frontend/src/components/ReferralsTab.tsx",
-        "frontend/src/utils/userDisplay.ts"
+        "frontend/src/pages/PublicReferralPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,17 +18,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-36"
+        "REQ-78"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-the-frontend-intakes-ui-display-last-updated-timestamp-and-last-updated-by-user-display-name-for-intakes-in-the-intake-detail-view-and-in-the-admin-data-table-view-using-english-labels-exactly-last-updated-and-last-updated-by",
-      "featureTitle": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+      "featureId": "feature-remove-avoid-any-honeypot-behavior-tied-to-the-website-field-on-the-public-referral-form-do-not-hide-the-field-do-not-block-submission-do-not-ignore-submissions-and-do-not-add-any-conditional-logic-based-on-website-including-trim-checks-submitting-the-form-must-always-follow-the-existing-usecreatereferral-actor-createreferral-mutation-flow-exactly-as-it-does-today",
+      "featureTitle": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
       "files": [
-        "frontend/src/components/IntakesDataViewTable.tsx",
-        "frontend/src/components/IntakesTab.tsx",
-        "frontend/src/utils/userDisplay.ts"
+        "frontend/src/pages/PublicReferralPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -42,30 +39,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-37"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-canister-type-bindings-and-any-related-typescript-types-so-the-new-backend-fields-required-for-last-updated-and-last-updated-by-are-available-in-components-that-render-referrals-and-intakes-without-breaking-existing-queries-mutations",
-      "featureTitle": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
-      "files": [
-        "frontend/src/components/IntakesDataViewTable.tsx",
-        "frontend/src/components/IntakesTab.tsx",
-        "frontend/src/components/ReferralsTab.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "blob-storage@4.0.0",
-        "user-approval@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-38"
+        "REQ-79"
       ],
       "confidence": "high"
     }

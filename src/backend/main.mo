@@ -2,6 +2,7 @@ import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Map "mo:core/Map";
+
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -12,9 +13,8 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import UserApproval "user-approval/approval";
-import Migration "migration";
 
-(with migration = Migration.run)
+
 actor {
   let accessControlState = AccessControl.initState();
   let approvalState = UserApproval.initState(accessControlState);
@@ -23,6 +23,27 @@ actor {
   include MixinStorage();
 
   let MaxActiveBeds = 12;
+
+  public type PlacementStatus = { #notPlaced; #placed; #employed; #completed };
+
+  public type WeeklyCheckIn = {
+    attendanceOk : Bool;
+    issuesReported : Bool;
+    weeklyNotes : Text;
+  };
+
+  public type PlacementEmployeeRecord = {
+    placementStatus : PlacementStatus;
+    employerName : Text;
+    jobRole : Text;
+    startDate : ?Text;
+    shiftSchedule : Text;
+    transportationPlan : Text;
+    placementNotes : Text;
+    follow_up_notes : ?Text;
+    weeklyCheckIn : ?WeeklyCheckIn;
+    needs_attention : Bool;
+  };
 
   public type Document = Storage.ExternalBlob;
 
@@ -85,6 +106,7 @@ actor {
     internalNotes : ?Text;
     statusHistory : [StatusHistoryEntry];
     lastUpdatedBy : ?Principal;
+    convertedIntakeId : ?Nat;
   };
 
   type Intake = {
@@ -108,7 +130,6 @@ actor {
   module Bed {
     public type Status = { #available; #occupied; #maintenance };
     public type Program = { #medicalStepDown; #workforceHousing };
-
     public type Bed = {
       id : Nat;
       facilityId : Nat;
@@ -174,6 +195,28 @@ actor {
     allAdminPrincipals : [Principal];
   };
 
+  public type TrainingChecklist = {
+    core : [Bool];
+    track : [Bool];
+  };
+
+  // Changed to reference new record
+  public type TrainingRecord = {
+    trainingStatus : {
+      #notStarted;
+      #inProgress;
+      #complete;
+    };
+    track : {
+      #janitorial;
+      #maintenance;
+      #foodService;
+    };
+    checklist : TrainingChecklist;
+    staffNotes : Text;
+    placement : PlacementEmployeeRecord;
+  };
+
   var nextReferralId = 1;
   var nextIntakeId = 1;
   var nextBedId = 1;
@@ -188,6 +231,7 @@ actor {
   let facilities = Map.empty<Nat, Facility>();
   let pendingRequests = Map.empty<Nat, AccessRequest>();
   let activityLog = List.empty<ActivityLogEntry>();
+  let trainingRecords = Map.empty<Nat, TrainingRecord>();
 
   func safeComparePrincipal(a : ?Principal, b : ?Principal) : Bool {
     switch (a, b) {
@@ -412,16 +456,10 @@ actor {
   };
 
   func countAdmins() : Nat {
-    userProfiles.keys().toArray().filter(
-      func(principal) {
-        isAdminInBothSystems(principal)
-      }
-    ).size();
+    userProfiles.keys().toArray().filter(func(principal) { isAdminInBothSystems(principal) }).size();
   };
 
-  func isUserAdmin(user : Principal) : Bool {
-    isAdminInBothSystems(user);
-  };
+  func isUserAdmin(user : Principal) : Bool { isAdminInBothSystems(user) };
 
   public shared ({ caller }) func assignUserRole(user : Principal, role : Text) : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
@@ -542,6 +580,7 @@ actor {
       internalNotes = null;
       statusHistory = referral.statusHistory;
       lastUpdatedBy = referral.lastUpdatedBy;
+      convertedIntakeId = referral.convertedIntakeId;
     };
   };
 
@@ -606,6 +645,7 @@ actor {
           internalNotes = ?notes;
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -695,6 +735,7 @@ actor {
       internalNotes = null;
       statusHistory = [initialStatusHistoryEntry];
       lastUpdatedBy = ?caller;
+      convertedIntakeId = null;
     };
 
     referrals.add(newId, referral);
@@ -739,6 +780,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -823,6 +865,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -866,6 +909,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -907,6 +951,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -960,6 +1005,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralUpdated, #referral, referralId);
@@ -1020,6 +1066,7 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralResubmitted, #referral, referralId);
@@ -1035,6 +1082,9 @@ actor {
     switch (referrals.get(referralId)) {
       case (null) { Runtime.trap("Referral not found") };
       case (?referral) {
+        let newIntakeId = nextIntakeId;
+        nextIntakeId += 1;
+
         let newHistoryEntry : StatusHistoryEntry = {
           status = #approved;
           timestamp = Time.now();
@@ -1060,11 +1110,9 @@ actor {
           internalNotes = referral.internalNotes;
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
+          convertedIntakeId = ?newIntakeId;
         };
         referrals.add(referralId, updatedReferral);
-
-        let newIntakeId = nextIntakeId;
-        nextIntakeId += 1;
 
         let initialStatusHistoryEntry : IntakeStatusHistoryEntry = {
           status = "pending";
@@ -1090,6 +1138,7 @@ actor {
           lastUpdatedBy = ?caller;
         };
         intakes.add(newIntakeId, newIntake);
+        logActivity(caller, #intakeCreated, #intake, newIntakeId);
 
         newIntake;
       };
@@ -1291,21 +1340,10 @@ actor {
             beds.add(bedId, updatedBed);
 
             let updatedIntake : Intake = {
-              id = intake.id;
-              client = intake.client;
-              details = intake.details;
-              status = intake.status;
-              submittedBy = intake.submittedBy;
-              reviewedBy = intake.reviewedBy;
-              createdAt = intake.createdAt;
-              updatedAt = intake.updatedAt;
-              assignedBedId = ?bedId;
-              exitDate = intake.exitDate;
-              exitNotes = intake.exitNotes;
-              internalNotes = intake.internalNotes;
-              caseManager = intake.caseManager;
-              statusHistory = intake.statusHistory;
+              intake with
+              updatedAt = Time.now();
               lastUpdatedBy = ?caller;
+              assignedBedId = ?bedId;
             };
             intakes.add(intakeId, updatedIntake);
             logActivity(caller, #bedAssigned, #bed, bedId);
@@ -1799,4 +1837,86 @@ actor {
       }
     );
   };
+
+  public query ({ caller }) func listClientsForTraining() : async [(Nat, Text)] {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Staff only");
+    };
+    trainingRecords.keys().toArray().map(
+      func(id) { (id, "") }
+    );
+  };
+
+  public query ({ caller }) func getTrainingRecord(clientId : Nat) : async ?TrainingRecord {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Staff only");
+    };
+    trainingRecords.get(clientId);
+  };
+
+  public shared ({ caller }) func updateTrainingRecord(
+    clientId : Nat,
+    trainingStatus : {
+      #notStarted;
+      #inProgress;
+      #complete;
+    },
+    track : {
+      #janitorial;
+      #maintenance;
+      #foodService;
+    },
+    checklist : TrainingChecklist,
+    staffNotes : Text,
+  ) : async () {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Staff only");
+    };
+
+    let record = switch (trainingRecords.get(clientId)) {
+      case (null) {
+        {
+          trainingStatus;
+          track;
+          checklist;
+          staffNotes;
+          placement = {
+            placementStatus = #notPlaced;
+            employerName = "";
+            jobRole = "";
+            startDate = null;
+            shiftSchedule = "";
+            transportationPlan = "";
+            placementNotes = "";
+            follow_up_notes = null;
+            weeklyCheckIn = null;
+            needs_attention = false;
+          };
+        };
+      };
+      case (?existing) {
+        { existing with trainingStatus; track; checklist; staffNotes };
+      };
+    };
+    trainingRecords.add(clientId, record);
+  };
+
+  public shared ({ caller }) func updateClientPlacementRecord(clientId : Nat, placementRecord : PlacementEmployeeRecord) : async () {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Staff only");
+    };
+
+    switch (trainingRecords.get(clientId)) {
+      case (null) { Runtime.trap("Training record not found") };
+      case (?existing) {
+        let updatedRecord : TrainingRecord = {
+          existing with
+          placement = placementRecord;
+        };
+        trainingRecords.add(clientId, updatedRecord);
+      };
+    };
+  };
 };
+
+

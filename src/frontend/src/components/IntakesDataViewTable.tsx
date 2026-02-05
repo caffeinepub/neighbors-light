@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useGetAllIntakes, useGetAllBeds, useGetAllUsers } from '../hooks/useQueries';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Intake, Bed } from '../backend';
 import { isIntakeAtRisk } from '../utils/atRisk';
@@ -78,6 +78,7 @@ export default function IntakesDataViewTable() {
           {sortedIntakes.map((intake) => {
             const bedInfo = getBedInfo(intake.assignedBedId);
             const atRisk = isIntakeAtRisk(intake);
+            const noCaseManager = !intake.caseManager;
             return (
               <TableRow key={intake.id.toString()} className={atRisk ? 'bg-warning/5' : ''}>
                 <TableCell className="font-medium">
@@ -95,9 +96,16 @@ export default function IntakesDataViewTable() {
                   {bedInfo ? bedInfo.program : <span className="text-muted-foreground">Not assigned</span>}
                 </TableCell>
                 <TableCell>
-                  <span className={!intake.caseManager ? 'text-muted-foreground' : ''}>
-                    {getUserDisplayName(intake.caseManager, allUsers)}
-                  </span>
+                  {noCaseManager ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-warning text-warning">
+                        <UserX className="mr-1 h-3 w-3" />
+                        No case manager
+                      </Badge>
+                    </div>
+                  ) : (
+                    <span>{getUserDisplayName(intake.caseManager, allUsers)}</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {bedInfo ? (

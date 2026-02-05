@@ -47,6 +47,10 @@ interface BedsTabProps {
   isAdmin: boolean;
 }
 
+// IMPORTANT: This component must remain read-only on initial render (beyond queries).
+// All bed mutations (assign, update, archive, delete) must only execute in direct response
+// to explicit user actions (form submits / confirmation dialogs).
+// Bed data persistence requires that no automatic effects or startup logic mutate bed records.
 export default function BedsTab({ isAdmin }: BedsTabProps) {
   const { data: beds = [], isLoading: bedsLoading } = useGetAllBeds();
   const { data: facilities = [] } = useGetAllFacilities();
@@ -112,6 +116,8 @@ export default function BedsTab({ isAdmin }: BedsTabProps) {
     toast.success('Filters reset to defaults');
   };
 
+  // IMPORTANT: All bed mutation handlers below are only called in response to explicit user actions.
+  // They must NOT be invoked automatically on mount, during effects, or through any startup logic.
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
 

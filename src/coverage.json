@@ -1,91 +1,45 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T04:12:04.818Z",
+  "generatedAt": "2026-02-05T22:53:29.255Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-34",
-        "summary": "Persist a \"last updated by\" principal on both Referral and Intake records in the backend, and update it on every backend mutation that changes the record (including: referral status changes, referral edits/resubmissions, referral internal notes changes, referral document uploads; intake status reviews, intake internal notes changes, intake case manager assignment, intake bed assignment, and marking intake exited).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-35",
-        "summary": "Ensure the backend \"updatedAt\" timestamp for Referrals and Intakes continues to reflect the most recent update time for the record across the same set of mutations, so the timestamp aligns with the new \"last updated by\" value.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-36",
-        "summary": "In the frontend Referrals UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for each referral in the referral detail view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+        "id": "REQ-78",
+        "summary": "Update the public (no-login) referral submission page at `frontend/src/pages/PublicReferralPage.tsx` to include a single, normal (visible) text input field named `website`, labeled exactly “Website (leave blank)”, placed at the bottom of the form (below all existing fields and above the submit button or directly above the footer area within the form). The field must be visually unobtrusive (e.g., small/secondary styling consistent with the existing Tailwind + shadcn form look), but it must remain a standard visible form field.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ReferralsTab.tsx",
-          "frontend/src/utils/userDisplay.ts"
+          "frontend/src/pages/PublicReferralPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/ReferralsTab.tsx",
-          "frontend/src/utils/userDisplay.ts"
+          "frontend/src/pages/PublicReferralPage.tsx"
         ]
       },
       {
-        "id": "REQ-37",
-        "summary": "In the frontend Intakes UI, display \"Last updated\" (timestamp) and \"Last updated by\" (user display name) for intakes in the intake detail view and in the Admin data table view, using English labels exactly \"Last updated\" and \"Last updated by\".",
+        "id": "REQ-79",
+        "summary": "Remove/avoid any honeypot behavior tied to the `website` field on the public referral form: do not hide the field, do not block submission, do not ignore submissions, and do not add any conditional logic based on `website` (including trim checks). Submitting the form must always follow the existing `useCreateReferral` / `actor.createReferral` mutation flow exactly as it does today.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/IntakesTab.tsx",
-          "frontend/src/components/IntakesDataViewTable.tsx",
-          "frontend/src/utils/userDisplay.ts"
+          "frontend/src/pages/PublicReferralPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/IntakesTab.tsx",
-          "frontend/src/components/IntakesDataViewTable.tsx",
-          "frontend/src/utils/userDisplay.ts"
-        ]
-      },
-      {
-        "id": "REQ-38",
-        "summary": "Update frontend canister type bindings and any related TypeScript types so the new backend fields required for \"Last updated\" and \"Last updated by\" are available in components that render referrals and intakes, without breaking existing queries/mutations.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/components/ReferralsTab.tsx",
-          "frontend/src/components/IntakesTab.tsx",
-          "frontend/src/components/IntakesDataViewTable.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/components/ReferralsTab.tsx",
-          "frontend/src/components/IntakesTab.tsx",
-          "frontend/src/components/IntakesDataViewTable.tsx"
+          "frontend/src/pages/PublicReferralPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/IntakesDataViewTable.tsx",
-    "frontend/src/components/IntakesTab.tsx",
-    "frontend/src/components/ReferralsTab.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/utils/userDisplay.ts",
+    "frontend/src/pages/PublicReferralPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

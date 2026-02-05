@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, ClipboardList, CheckCircle2, XCircle, Bed as BedIcon, ArrowLeft, LogOut, Lock, UserCircle, History, AlertTriangle, Table as TableIcon, LayoutGrid } from 'lucide-react';
+import { Plus, Loader2, ClipboardList, CheckCircle2, XCircle, Bed as BedIcon, ArrowLeft, LogOut, Lock, UserCircle, History, AlertTriangle, Table as TableIcon, LayoutGrid, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Client, Intake, Bed, Program } from '../backend';
 import { Principal } from '@dfinity/principal';
@@ -27,6 +27,16 @@ import { getUserDisplayName } from '../utils/userDisplay';
 interface IntakesTabProps {
   isAdmin: boolean;
 }
+
+const EXIT_REASONS = [
+  'Completed program successfully',
+  'Transferred to another facility',
+  'Moved to permanent housing',
+  'Voluntary departure',
+  'Medical reasons',
+  'Behavioral issues',
+  'Other',
+] as const;
 
 export default function IntakesTab({ isAdmin }: IntakesTabProps) {
   const { data: intakes = [], isLoading } = useGetAllIntakes();
@@ -55,7 +65,8 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
 
   const [isExitOpen, setIsExitOpen] = useState(false);
   const [exitDate, setExitDate] = useState('');
-  const [exitNotes, setExitNotes] = useState('');
+  const [exitReasonSelect, setExitReasonSelect] = useState('');
+  const [exitReasonOther, setExitReasonOther] = useState('');
   const [exitError, setExitError] = useState('');
 
   const [internalNotesText, setInternalNotesText] = useState('');
@@ -147,7 +158,8 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
     setSelectedIntake(intake);
     setIsExitOpen(true);
     setExitDate('');
-    setExitNotes('');
+    setExitReasonSelect('');
+    setExitReasonOther('');
     setExitError('');
   };
 
@@ -159,8 +171,14 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
       return;
     }
 
-    if (!exitNotes.trim()) {
-      setExitError('Exit notes are required');
+    if (!exitReasonSelect) {
+      setExitError('Exit reason is required');
+      return;
+    }
+
+    // If "Other" is selected, require the free-text field
+    if (exitReasonSelect === 'Other' && !exitReasonOther.trim()) {
+      setExitError('Please specify the exit reason');
       return;
     }
 
@@ -171,17 +189,23 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
       const dateObj = new Date(exitDate);
       const exitTimestamp = BigInt(dateObj.getTime() * 1000000);
 
+      // Compute final exit reason
+      const finalExitReason = exitReasonSelect === 'Other' 
+        ? exitReasonOther.trim() 
+        : exitReasonSelect;
+
       await markIntakeExited.mutateAsync({
         intakeId: selectedIntake.id,
         exitDate: exitTimestamp,
-        exitNotes: exitNotes.trim(),
+        exitNotes: finalExitReason,
       });
 
       toast.success('Intake marked as exited successfully');
       setIsExitOpen(false);
       setSelectedIntake(null);
       setExitDate('');
-      setExitNotes('');
+      setExitReasonSelect('');
+      setExitReasonOther('');
       setExitError('');
     } catch (error) {
       toast.error('Failed to mark intake as exited');
@@ -253,6 +277,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
   };
 
   if (selectedIntake && !isAssignBedOpen && !isExitOpen) {
+    const noCaseManager = !selectedIntake.caseManager;
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -277,6 +302,12 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
                   <Badge variant="outline" className="mt-2 border-warning text-warning">
                     <AlertTriangle className="mr-1 h-3 w-3" />
                     At Risk - {getIntakeAtRiskLabel()}
+                  </Badge>
+                )}
+                {noCaseManager && (
+                  <Badge variant="outline" className="mt-2 border-warning text-warning">
+                    <UserX className="mr-1 h-3 w-3" />
+                    No case manager
                   </Badge>
                 )}
               </div>
@@ -400,7 +431,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
                   {new Date(Number(selectedIntake.exitDate) / 1000000).toLocaleDateString()}
                 </p>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Exit Notes:</p>
+                  <p className="text-sm font-medium">Exit Reason:</p>
                   <p className="text-sm text-muted-foreground">{selectedIntake.exitNotes}</p>
                 </div>
               </div>
@@ -764,7 +795,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
           <DialogHeader>
             <DialogTitle>Mark Intake as Exited</DialogTitle>
             <DialogDescription>
-              Record the exit date and notes for {selectedIntake?.client.name}
+              Record the exit date and reason for {selectedIntake?.client.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -782,17 +813,37 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exitNotes">
-                Exit Notes <span className="text-destructive">*</span>
+              <Label htmlFor="exitReason">
+                Exit Reason <span className="text-destructive">*</span>
               </Label>
-              <Textarea
-                id="exitNotes"
-                value={exitNotes}
-                onChange={(e) => setExitNotes(e.target.value)}
-                placeholder="Describe the reason for exit, outcome, and any relevant details"
-                rows={4}
-              />
+              <Select value={exitReasonSelect} onValueChange={setExitReasonSelect}>
+                <SelectTrigger id="exitReason">
+                  <SelectValue placeholder="Select exit reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXIT_REASONS.map((reason) => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {exitReasonSelect === 'Other' && (
+              <div className="space-y-2">
+                <Label htmlFor="exitReasonOther">
+                  Specify Exit Reason <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="exitReasonOther"
+                  value={exitReasonOther}
+                  onChange={(e) => setExitReasonOther(e.target.value)}
+                  placeholder="Please describe the exit reason"
+                  rows={3}
+                />
+              </div>
+            )}
 
             {exitError && (
               <p className="text-sm text-destructive">{exitError}</p>
@@ -805,7 +856,8 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
                 onClick={() => {
                   setIsExitOpen(false);
                   setExitDate('');
-                  setExitNotes('');
+                  setExitReasonSelect('');
+                  setExitReasonOther('');
                   setExitError('');
                 }}
                 className="flex-1"
@@ -852,6 +904,7 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sortedIntakes.map((intake) => {
                 const atRisk = isIntakeAtRisk(intake);
+                const noCaseManager = !intake.caseManager;
                 return (
                   <Card
                     key={intake.id.toString()}
@@ -876,6 +929,12 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
                               At Risk
                             </Badge>
                           )}
+                          {noCaseManager && (
+                            <Badge variant="outline" className="mt-2 border-warning text-warning">
+                              <UserX className="mr-1 h-3 w-3" />
+                              No case manager
+                            </Badge>
+                          )}
                         </div>
                         <Badge variant={getStatusVariant(intake.status)}>
                           {getStatusLabel(intake.status)}
@@ -890,6 +949,14 @@ export default function IntakesTab({ isAdmin }: IntakesTabProps) {
                         <p className="text-muted-foreground">
                           <span className="font-medium">Created:</span>{' '}
                           {new Date(Number(intake.createdAt) / 1000000).toLocaleDateString()}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          <span className="font-medium">Last updated:</span>{' '}
+                          {new Date(Number(intake.updatedAt) / 1000000).toLocaleString()}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          <span className="font-medium">Last updated by:</span>{' '}
+                          {getUserName(intake.lastUpdatedBy)}
                         </p>
                       </div>
                     </CardContent>

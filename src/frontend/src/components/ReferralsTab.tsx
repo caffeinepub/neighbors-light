@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown } from 'lucide-react';
+import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Referral, Status } from '../backend';
@@ -314,6 +314,7 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedReferrals.map((referral) => {
               const atRisk = isReferralAtRisk(referral.createdAt);
+              const approvedNotConverted = referral.status === 'approved' && !referral.convertedIntakeId;
               return (
                 <Card 
                   key={referral.id.toString()} 
@@ -343,6 +344,12 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
                           At Risk - {getReferralAtRiskLabel()}
                         </Badge>
                       )}
+                      {approvedNotConverted && (
+                        <Badge variant="outline" className="self-start border-warning text-warning">
+                          <FileCheck className="mr-1 h-3 w-3" />
+                          Approved, not converted
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -363,6 +370,14 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
                           <span className="font-medium">Documents:</span> {referral.documents.length}
                         </p>
                       )}
+                      <p className="text-muted-foreground text-xs mt-1">
+                        <span className="font-medium">Last updated:</span>{' '}
+                        {new Date(Number(referral.updatedAt) / 1000000).toLocaleString()}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        <span className="font-medium">Last updated by:</span>{' '}
+                        {getUserName(referral.lastUpdatedBy)}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -386,6 +401,12 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
                   <Badge variant="destructive" className="self-start">
                     <AlertTriangle className="mr-1 h-3 w-3" />
                     At Risk - {getReferralAtRiskLabel()}
+                  </Badge>
+                )}
+                {selectedReferral.status === 'approved' && !selectedReferral.convertedIntakeId && (
+                  <Badge variant="outline" className="self-start border-warning text-warning">
+                    <FileCheck className="mr-1 h-3 w-3" />
+                    Approved, not converted
                   </Badge>
                 )}
               </DialogTitle>

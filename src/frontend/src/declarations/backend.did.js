@@ -136,6 +136,7 @@ export const Referral = IDL.Record({
   'assignedStaff' : IDL.Opt(IDL.Principal),
   'programRequested' : IDL.Text,
   'internalNotes' : IDL.Opt(IDL.Text),
+  'convertedIntakeId' : IDL.Opt(IDL.Nat),
   'requestMoreInfo' : IDL.Opt(IDL.Text),
   'reason' : IDL.Text,
 });
@@ -166,6 +167,48 @@ export const AccessRequest = IDL.Record({
   'notes' : IDL.Opt(IDL.Text),
   'phone' : IDL.Text,
   'assignedUser' : IDL.Opt(IDL.Principal),
+});
+export const WeeklyCheckIn = IDL.Record({
+  'weeklyNotes' : IDL.Text,
+  'attendanceOk' : IDL.Bool,
+  'issuesReported' : IDL.Bool,
+});
+export const PlacementStatus = IDL.Variant({
+  'placed' : IDL.Null,
+  'completed' : IDL.Null,
+  'employed' : IDL.Null,
+  'notPlaced' : IDL.Null,
+});
+export const PlacementEmployeeRecord = IDL.Record({
+  'placementNotes' : IDL.Text,
+  'jobRole' : IDL.Text,
+  'follow_up_notes' : IDL.Opt(IDL.Text),
+  'weeklyCheckIn' : IDL.Opt(WeeklyCheckIn),
+  'employerName' : IDL.Text,
+  'shiftSchedule' : IDL.Text,
+  'placementStatus' : PlacementStatus,
+  'transportationPlan' : IDL.Text,
+  'needs_attention' : IDL.Bool,
+  'startDate' : IDL.Opt(IDL.Text),
+});
+export const TrainingChecklist = IDL.Record({
+  'track' : IDL.Vec(IDL.Bool),
+  'core' : IDL.Vec(IDL.Bool),
+});
+export const TrainingRecord = IDL.Record({
+  'track' : IDL.Variant({
+    'foodService' : IDL.Null,
+    'maintenance' : IDL.Null,
+    'janitorial' : IDL.Null,
+  }),
+  'staffNotes' : IDL.Text,
+  'placement' : PlacementEmployeeRecord,
+  'checklist' : TrainingChecklist,
+  'trainingStatus' : IDL.Variant({
+    'notStarted' : IDL.Null,
+    'complete' : IDL.Null,
+    'inProgress' : IDL.Null,
+  }),
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -284,6 +327,11 @@ export const idlService = IDL.Service({
       [IDL.Vec(StatusHistoryEntry)],
       ['query'],
     ),
+  'getTrainingRecord' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Opt(TrainingRecord)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -295,6 +343,11 @@ export const idlService = IDL.Service({
   'isRequestApproved' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
   'listAdmins' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+  'listClientsForTraining' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+      ['query'],
+    ),
   'markIntakeExited' : IDL.Func([IDL.Nat, Time, IDL.Text], [], []),
   'rejectRequest' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'removeUserRole' : IDL.Func([IDL.Principal], [], []),
@@ -315,6 +368,11 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateBedStatus' : IDL.Func([IDL.Nat, Status__1], [], []),
+  'updateClientPlacementRecord' : IDL.Func(
+      [IDL.Nat, PlacementEmployeeRecord],
+      [],
+      [],
+    ),
   'updateReferral' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, Client, IDL.Text],
       [],
@@ -327,6 +385,25 @@ export const idlService = IDL.Service({
     ),
   'updateReferralStatusWithMessage' : IDL.Func(
       [IDL.Nat, Status, IDL.Opt(IDL.Text)],
+      [],
+      [],
+    ),
+  'updateTrainingRecord' : IDL.Func(
+      [
+        IDL.Nat,
+        IDL.Variant({
+          'notStarted' : IDL.Null,
+          'complete' : IDL.Null,
+          'inProgress' : IDL.Null,
+        }),
+        IDL.Variant({
+          'foodService' : IDL.Null,
+          'maintenance' : IDL.Null,
+          'janitorial' : IDL.Null,
+        }),
+        TrainingChecklist,
+        IDL.Text,
+      ],
       [],
       [],
     ),
@@ -464,6 +541,7 @@ export const idlFactory = ({ IDL }) => {
     'assignedStaff' : IDL.Opt(IDL.Principal),
     'programRequested' : IDL.Text,
     'internalNotes' : IDL.Opt(IDL.Text),
+    'convertedIntakeId' : IDL.Opt(IDL.Nat),
     'requestMoreInfo' : IDL.Opt(IDL.Text),
     'reason' : IDL.Text,
   });
@@ -494,6 +572,48 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Opt(IDL.Text),
     'phone' : IDL.Text,
     'assignedUser' : IDL.Opt(IDL.Principal),
+  });
+  const WeeklyCheckIn = IDL.Record({
+    'weeklyNotes' : IDL.Text,
+    'attendanceOk' : IDL.Bool,
+    'issuesReported' : IDL.Bool,
+  });
+  const PlacementStatus = IDL.Variant({
+    'placed' : IDL.Null,
+    'completed' : IDL.Null,
+    'employed' : IDL.Null,
+    'notPlaced' : IDL.Null,
+  });
+  const PlacementEmployeeRecord = IDL.Record({
+    'placementNotes' : IDL.Text,
+    'jobRole' : IDL.Text,
+    'follow_up_notes' : IDL.Opt(IDL.Text),
+    'weeklyCheckIn' : IDL.Opt(WeeklyCheckIn),
+    'employerName' : IDL.Text,
+    'shiftSchedule' : IDL.Text,
+    'placementStatus' : PlacementStatus,
+    'transportationPlan' : IDL.Text,
+    'needs_attention' : IDL.Bool,
+    'startDate' : IDL.Opt(IDL.Text),
+  });
+  const TrainingChecklist = IDL.Record({
+    'track' : IDL.Vec(IDL.Bool),
+    'core' : IDL.Vec(IDL.Bool),
+  });
+  const TrainingRecord = IDL.Record({
+    'track' : IDL.Variant({
+      'foodService' : IDL.Null,
+      'maintenance' : IDL.Null,
+      'janitorial' : IDL.Null,
+    }),
+    'staffNotes' : IDL.Text,
+    'placement' : PlacementEmployeeRecord,
+    'checklist' : TrainingChecklist,
+    'trainingStatus' : IDL.Variant({
+      'notStarted' : IDL.Null,
+      'complete' : IDL.Null,
+      'inProgress' : IDL.Null,
+    }),
   });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -616,6 +736,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(StatusHistoryEntry)],
         ['query'],
       ),
+    'getTrainingRecord' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(TrainingRecord)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -627,6 +752,11 @@ export const idlFactory = ({ IDL }) => {
     'isRequestApproved' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'listAdmins' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+    'listClientsForTraining' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+        ['query'],
+      ),
     'markIntakeExited' : IDL.Func([IDL.Nat, Time, IDL.Text], [], []),
     'rejectRequest' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'removeUserRole' : IDL.Func([IDL.Principal], [], []),
@@ -647,6 +777,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateBedStatus' : IDL.Func([IDL.Nat, Status__1], [], []),
+    'updateClientPlacementRecord' : IDL.Func(
+        [IDL.Nat, PlacementEmployeeRecord],
+        [],
+        [],
+      ),
     'updateReferral' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, Client, IDL.Text],
         [],
@@ -659,6 +794,25 @@ export const idlFactory = ({ IDL }) => {
       ),
     'updateReferralStatusWithMessage' : IDL.Func(
         [IDL.Nat, Status, IDL.Opt(IDL.Text)],
+        [],
+        [],
+      ),
+    'updateTrainingRecord' : IDL.Func(
+        [
+          IDL.Nat,
+          IDL.Variant({
+            'notStarted' : IDL.Null,
+            'complete' : IDL.Null,
+            'inProgress' : IDL.Null,
+          }),
+          IDL.Variant({
+            'foodService' : IDL.Null,
+            'maintenance' : IDL.Null,
+            'janitorial' : IDL.Null,
+          }),
+          TrainingChecklist,
+          IDL.Text,
+        ],
         [],
         [],
       ),

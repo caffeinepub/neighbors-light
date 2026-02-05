@@ -102,6 +102,22 @@ export interface PartnerAgencyProfile {
   'agencyName' : string,
   'phone' : string,
 }
+export interface PlacementEmployeeRecord {
+  'placementNotes' : string,
+  'jobRole' : string,
+  'follow_up_notes' : [] | [string],
+  'weeklyCheckIn' : [] | [WeeklyCheckIn],
+  'employerName' : string,
+  'shiftSchedule' : string,
+  'placementStatus' : PlacementStatus,
+  'transportationPlan' : string,
+  'needs_attention' : boolean,
+  'startDate' : [] | [string],
+}
+export type PlacementStatus = { 'placed' : null } |
+  { 'completed' : null } |
+  { 'employed' : null } |
+  { 'notPlaced' : null };
 export type Program = { 'medicalStepDown' : null } |
   { 'workforceHousing' : null };
 export interface Referral {
@@ -121,6 +137,7 @@ export interface Referral {
   'assignedStaff' : [] | [Principal],
   'programRequested' : string,
   'internalNotes' : [] | [string],
+  'convertedIntakeId' : [] | [bigint],
   'requestMoreInfo' : [] | [string],
   'reason' : string,
 }
@@ -138,6 +155,21 @@ export type Status__1 = { 'occupied' : null } |
   { 'available' : null } |
   { 'maintenance' : null };
 export type Time = bigint;
+export interface TrainingChecklist {
+  'track' : Array<boolean>,
+  'core' : Array<boolean>,
+}
+export interface TrainingRecord {
+  'track' : { 'foodService' : null } |
+    { 'maintenance' : null } |
+    { 'janitorial' : null },
+  'staffNotes' : string,
+  'placement' : PlacementEmployeeRecord,
+  'checklist' : TrainingChecklist,
+  'trainingStatus' : { 'notStarted' : null } |
+    { 'complete' : null } |
+    { 'inProgress' : null },
+}
 export interface UserApprovalInfo {
   'status' : ApprovalStatus,
   'principal' : Principal,
@@ -151,6 +183,11 @@ export interface UserProfile {
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface WeeklyCheckIn {
+  'weeklyNotes' : string,
+  'attendanceOk' : boolean,
+  'issuesReported' : boolean,
+}
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -233,6 +270,7 @@ export interface _SERVICE {
   'getReferral' : ActorMethod<[bigint], Referral>,
   'getReferralForPartnerAgency' : ActorMethod<[bigint], Referral>,
   'getReferralStatusHistory' : ActorMethod<[bigint], Array<StatusHistoryEntry>>,
+  'getTrainingRecord' : ActorMethod<[bigint], [] | [TrainingRecord]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isAdmin' : ActorMethod<[], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
@@ -240,6 +278,7 @@ export interface _SERVICE {
   'isRequestApproved' : ActorMethod<[Principal], boolean>,
   'listAdmins' : ActorMethod<[], Array<Principal>>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
+  'listClientsForTraining' : ActorMethod<[], Array<[bigint, string]>>,
   'markIntakeExited' : ActorMethod<[bigint, Time, string], undefined>,
   'rejectRequest' : ActorMethod<[bigint, string], undefined>,
   'removeUserRole' : ActorMethod<[Principal], undefined>,
@@ -261,6 +300,10 @@ export interface _SERVICE {
     undefined
   >,
   'updateBedStatus' : ActorMethod<[bigint, Status__1], undefined>,
+  'updateClientPlacementRecord' : ActorMethod<
+    [bigint, PlacementEmployeeRecord],
+    undefined
+  >,
   'updateReferral' : ActorMethod<
     [bigint, string, string, string, string, Client, string],
     undefined
@@ -271,6 +314,20 @@ export interface _SERVICE {
   >,
   'updateReferralStatusWithMessage' : ActorMethod<
     [bigint, Status, [] | [string]],
+    undefined
+  >,
+  'updateTrainingRecord' : ActorMethod<
+    [
+      bigint,
+      { 'notStarted' : null } |
+        { 'complete' : null } |
+        { 'inProgress' : null },
+      { 'foodService' : null } |
+        { 'maintenance' : null } |
+        { 'janitorial' : null },
+      TrainingChecklist,
+      string,
+    ],
     undefined
   >,
   'uploadReferralDocuments' : ActorMethod<[bigint, Array<Document>], undefined>,

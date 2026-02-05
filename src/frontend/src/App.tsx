@@ -7,6 +7,7 @@ import ProfileSetupModal from './components/ProfileSetupModal';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import PartnerDashboard from './pages/PartnerDashboard';
+import PublicReferralPage from './pages/PublicReferralPage';
 import AccessDeniedScreen from './components/AccessDeniedScreen';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -15,6 +16,7 @@ export default function App() {
   const { identity, loginStatus } = useInternetIdentity();
   const isAuthenticated = !!identity;
 
+  // All hooks must be called at the top level, before any conditional returns
   const {
     data: userProfile,
     isLoading: profileLoading,
@@ -30,6 +32,8 @@ export default function App() {
   } = useIsAdmin();
 
   // Trigger profile fetch immediately after authentication to ensure backend self-repair runs
+  // IMPORTANT: This effect must remain read-only and must NOT trigger any bed inventory mutations.
+  // Bed data persistence requires that no automatic initialization or reset occurs during app startup.
   useEffect(() => {
     if (isAuthenticated && !profileLoading && !profileFetched) {
       refetchProfile();
@@ -37,11 +41,25 @@ export default function App() {
   }, [isAuthenticated, profileLoading, profileFetched, refetchProfile]);
 
   // After profile is fetched, ensure admin status is checked
+  // IMPORTANT: This effect must remain read-only and must NOT trigger any bed inventory mutations.
   useEffect(() => {
     if (isAuthenticated && profileFetched && !adminLoading && !adminFetched) {
       refetchAdmin();
     }
   }, [isAuthenticated, profileFetched, adminLoading, adminFetched, refetchAdmin]);
+
+  // Check if we're on the public referral route (after all hooks are called)
+  const isPublicReferralRoute = window.location.pathname === '/public/referral';
+
+  // If on public referral route, render it without authentication
+  if (isPublicReferralRoute) {
+    return (
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <PublicReferralPage />
+        <Toaster />
+      </ThemeProvider>
+    );
+  }
 
   // Show login page if not authenticated
   if (!isAuthenticated) {

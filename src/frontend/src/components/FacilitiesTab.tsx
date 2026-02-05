@@ -73,6 +73,10 @@ export default function FacilitiesTab() {
     }
   };
 
+  // IMPORTANT: Bed creation must only occur via explicit user action (form submission).
+  // This function is only called when the user submits the "Add Bed" form.
+  // Beds must NOT be auto-created, seeded, or initialized by the frontend on mount or startup.
+  // Bed data persistence requires that bed inventory changes only through deliberate Admin actions.
   const handleAddBed = async (e: React.FormEvent) => {
     e.preventDefault();
 
