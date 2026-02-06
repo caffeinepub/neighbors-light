@@ -1,40 +1,50 @@
 {
   "kind": "build_request",
-  "title": "Adjust public referral website field label, helper text, and spacing",
+  "title": "Move referral_review_status to the top of the Referral review screen",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-80",
-      "text": "Update the public (no-login) referral submission form layout in `frontend/src/pages/PublicReferralPage.tsx` for the existing website field (use `website` if present; otherwise apply the same changes to `company_website` if that is the field that exists): set the field label text to exactly “Website (leave blank)”, add helper text directly below the input that reads exactly “Please leave this field empty.”, and add extra vertical spacing above this field so it is visually separated from the main referral questions.",
+      "id": "REQ-81",
+      "text": "Reorder the Staff/Admin Referral review screen UI so the existing `referral_review_status` field/section appears at the very top of the Referral review screen (i.e., it is the first field shown in the review form/content area, before any other referral fields/sections). Do not add any new fields, do not add or change logic, and do not change any existing data.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Update the public Referral form layout.\n\nFor the field:\n- company_website (or website, whichever exists)\n\nChange the label text to:\n“Website (leave blank)”\n\nAdd helper text below the field:\n“Please leave this field empty.”\n\nAdd extra spacing above this field so it appears separated from the main referral questions.\n\nDo not change validation, logic, or behavior."
+          "Reorder the Referral review screen.\n\nMove the existing field:\n- referral_review_status\n\nSo it appears at the very top of the Referral review screen.\n\nDo not add new fields.\nDo not add logic.\nDo not change existing data."
         ]
       },
       "acceptanceCriteria": [
-        "On `/public/referral`, the website field label is exactly “Website (leave blank)” (English).",
-        "A helper text line appears immediately below the website input and reads exactly “Please leave this field empty.” (English).",
-        "There is noticeably more spacing above the website field compared to the spacing between the main referral questions (i.e., it is visually separated).",
-        "No referral form validation rules, submit handler logic, or submission behavior changes (the referral creation flow remains exactly as it is today)."
+        "On the Staff/Admin Referral review UI (referral detail/review view), `referral_review_status` is displayed as the first field/section at the top of the screen/content area before any other referral fields.",
+        "No new fields are added anywhere in the Referral review UI.",
+        "No new conditional behavior, validation, mutations, queries, or backend calls are introduced as part of this change.",
+        "No backend data model, stored values, or API behavior is changed."
       ]
     }
   ],
   "constraints": [
-    "Use English for all user-facing text changed/added by this request.",
-    "Do not change validation, submit logic, or any behavioral flow related to referral submission; this is a layout/content-only change.",
-    "Make changes only in the public referral form UI (no backend changes)."
+    "Use English for any user-facing text.",
+    "Frontend change only: do not add new fields, do not add/modify logic, and do not change existing data.",
+    "Do not modify any files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Adding new fields to the public referral form.",
-    "Changing any backend types, schemas, canister methods, or stored referral data.",
-    "Adding/altering any spam prevention or honeypot logic tied to the website/company_website field."
+    "Adding the previously mentioned `next_action` field to Referral records or the Referral review screen.",
+    "Implementing backend persistence or automation for `referral_review_status`.",
+    "Changing any referral workflow status behavior, validation, or role-based access controls."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

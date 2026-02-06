@@ -1,22 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Public referral form website field label/helper text/spacing adjustments",
+  "title": "Move referral_review_status to top of Staff/Admin Referral review screen",
   "requirements": [
     {
-      "id": "REQ-80",
-      "summary": "Adjust the public referral form’s website field label text, add helper text below the input, and increase vertical spacing above the website field without changing any validation or submission behavior.",
+      "id": "REQ-81",
+      "summary": "Reorder the Staff/Admin Referral review UI so the existing referral_review_status section is the first section shown in the Referral review dialog content area.",
       "acceptanceCriteria": [
-        "On `/public/referral`, the website field label is exactly “Website (leave blank)” (English).",
-        "A helper text line appears immediately below the website input and reads exactly “Please leave this field empty.” (English).",
-        "There is noticeably more spacing above the website field compared to the spacing between the main referral questions (i.e., it is visually separated).",
-        "No referral form validation rules, submit handler logic, or submission behavior changes (the referral creation flow remains exactly as it is today)."
+        "On the Staff/Admin Referral review UI (referral detail/review view), `referral_review_status` is displayed as the first field/section at the top of the screen/content area before any other referral fields.",
+        "No new fields are added anywhere in the Referral review UI.",
+        "No new conditional behavior, validation, mutations, queries, or backend calls are introduced as part of this change.",
+        "No backend data model, stored values, or API behavior is changed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/PublicReferralPage.tsx",
+          "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "Update the existing website field block (use `website`; if not present in the file, apply the same UI-only changes to `company_website` instead): ensure the label text is exactly “Website (leave blank)”, add a helper text line immediately below the input reading exactly “Please leave this field empty.”, and add extra vertical spacing above this field (e.g., additional margin/padding on the website field container) to visually separate it from the main referral questions. Do not modify validation, state, submit handler, or referral creation behavior."
+          "description": "In the Staff/Admin referral details Dialog, move the existing 'Referral Review Status' block (the current referral_review_status section) to be the first rendered section directly under the Dialog container/top of scrollable content, before any other referral fields/sections. Keep all existing UI elements and handlers unchanged; only reorder layout/JSX."
         }
       ]
     }

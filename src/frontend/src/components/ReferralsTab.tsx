@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown, FileCheck } from 'lucide-react';
+import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown, FileCheck, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Referral, Status } from '../backend';
@@ -26,6 +26,37 @@ import { getUserDisplayName } from '../utils/userDisplay';
 
 interface ReferralsTabProps {
   isAdmin: boolean;
+}
+
+// Type for referral review status (will be defined in backend)
+type ReferralReviewStatus = 'notReviewed' | 'reviewed' | 'accepted' | 'declined';
+
+// Helper function to get display label for review status
+function getReviewStatusLabel(status: ReferralReviewStatus): string {
+  switch (status) {
+    case 'notReviewed':
+      return 'Not Reviewed';
+    case 'reviewed':
+      return 'Reviewed';
+    case 'accepted':
+      return 'Accepted';
+    case 'declined':
+      return 'Declined';
+  }
+}
+
+// Helper function to get badge variant for review status
+function getReviewStatusVariant(status: ReferralReviewStatus): 'default' | 'secondary' | 'outline' | 'destructive' {
+  switch (status) {
+    case 'notReviewed':
+      return 'outline';
+    case 'reviewed':
+      return 'secondary';
+    case 'accepted':
+      return 'default';
+    case 'declined':
+      return 'destructive';
+  }
 }
 
 export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
@@ -51,6 +82,9 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
 
   const [internalNotesText, setInternalNotesText] = useState('');
   const [isEditingInternalNotes, setIsEditingInternalNotes] = useState(false);
+
+  // State for review status (will be used when backend is ready)
+  const [selectedReviewStatus, setSelectedReviewStatus] = useState<ReferralReviewStatus>('notReviewed');
 
   const handleStatusChange = async (referralId: bigint, newStatus: Status, message?: string) => {
     try {
@@ -124,6 +158,23 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     setSelectedReferral(referral);
     setInternalNotesText(referral.internalNotes || '');
     setIsEditingInternalNotes(false);
+    // TODO: When backend is ready, set the review status from referral data
+    // setSelectedReviewStatus(referral.referral_review_status || 'notReviewed');
+    setSelectedReviewStatus('notReviewed'); // Default for now
+  };
+
+  const handleReviewStatusChange = async (newStatus: ReferralReviewStatus) => {
+    if (!selectedReferral) return;
+    
+    // TODO: Implement backend call when ready
+    // await updateReferralReviewStatus.mutateAsync({
+    //   referralId: selectedReferral.id,
+    //   reviewStatus: newStatus,
+    // });
+    
+    setSelectedReviewStatus(newStatus);
+    toast.info('Review status update - Backend integration pending');
+    console.log('Review status would be updated to:', newStatus);
   };
 
   const handleClearFilters = () => {
@@ -422,6 +473,36 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
             </DialogHeader>
 
             <div className="space-y-4">
+              {/* Referral Review Status - Moved to the top */}
+              <div className="space-y-2 p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Referral Review Status</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant={getReviewStatusVariant(selectedReviewStatus)} className="text-sm">
+                    {getReviewStatusLabel(selectedReviewStatus)}
+                  </Badge>
+                  <Select
+                    value={selectedReviewStatus}
+                    onValueChange={(value) => handleReviewStatusChange(value as ReferralReviewStatus)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="notReviewed">Not Reviewed</SelectItem>
+                      <SelectItem value="reviewed">Reviewed</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This status tracks the internal review process and is separate from the referral workflow status.
+                </p>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Partner Agency</Label>

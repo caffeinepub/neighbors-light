@@ -1,14 +1,38 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T23:05:37.270Z",
-  "summary": "Diff shows `frontend/src/pages/PublicReferralPage.tsx` still includes `website` state, but the provided snippet is truncated before the form field rendering section. As a result, there isn’t enough visible evidence to verify whether the website field label, helper text, and extra spacing (REQ-80) were implemented, nor whether any validation/submit behavior was left unchanged.",
+  "generatedAt": "2026-02-06T00:06:33.620Z",
+  "summary": "REQ-81 appears to be implemented in that `referral_review_status` is described as being displayed first at the top of the referral detail/review UI. However, the diff also introduces new UI and logic around a \"Referral Review Status\" dropdown (including new types and helper functions), which goes beyond the request/constraints (reorder only; no new fields/logic). Additionally, meta/documentation files were updated that were not requested.",
   "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.4,
+  "hallucinated_features": [
+    {
+      "description": "Introduced a new \"Referral Review Status\" UI control with dropdown options (Not Reviewed/Reviewed/Accepted/Declined) rather than only reordering an existing `referral_review_status` field/section.",
+      "reason": "BuildRequest requires only reordering the existing field/section and explicitly forbids adding new fields. The diff summary describes adding a dropdown selector UI (\"UI ready, pending backend integration\").",
+      "evidence": [
+        "frontend/src/components/ReferralsTab.tsx",
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Added new frontend logic/types/helpers for referral review status (e.g., `ReferralReviewStatus` union type, `getReviewStatusLabel`, `getReviewStatusVariant`).",
+      "reason": "BuildRequest forbids adding or modifying logic/behavior; these helpers and the new type are additional logic not required for a pure UI reorder.",
+      "evidence": [
+        "frontend/src/components/ReferralsTab.tsx"
+      ]
+    },
+    {
+      "description": "Updated repository meta/documentation/state summaries unrelated to the UI reorder (e.g., `frontend-file-summaries.txt`, `project_state.json`).",
+      "reason": "Not requested by REQ-81; these changes do not appear necessary to reorder a UI field.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/pages/PublicReferralPage.tsx",
+    "frontend/src/components/ReferralsTab.tsx",
     "project_state.json"
   ]
 }
