@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGetAllReferrals, useUpdateReferralStatusWithMessage, useRequestMoreInfo, useAddReferralInternalNotes, useApproveReferralAndCreateIntake, useGetReferralStatusHistory, useGetAllUsers } from '../hooks/useQueries';
+import { useGetAllReferrals, useUpdateReferralStatusWithMessage, useRequestMoreInfo, useAddReferralInternalNotes, useAddReferralReviewNotes, useApproveReferralAndCreateIntake, useGetReferralStatusHistory, useGetAllUsers } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown, FileCheck, ClipboardCheck } from 'lucide-react';
+import { Loader2, Users, AlertCircle, MessageSquare, Lock, Clock, History, AlertTriangle, Filter, X, ArrowUpDown, FileCheck, ClipboardCheck, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Referral, Status } from '../backend';
@@ -65,6 +65,7 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
   const updateStatusWithMessage = useUpdateReferralStatusWithMessage();
   const requestMoreInfo = useRequestMoreInfo();
   const addInternalNotes = useAddReferralInternalNotes();
+  const addReviewNotes = useAddReferralReviewNotes();
   const approveAndConvert = useApproveReferralAndCreateIntake();
 
   // Use the now hook to keep waiting times updated
@@ -82,6 +83,9 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
 
   const [internalNotesText, setInternalNotesText] = useState('');
   const [isEditingInternalNotes, setIsEditingInternalNotes] = useState(false);
+
+  const [staffReviewNotesText, setStaffReviewNotesText] = useState('');
+  const [isEditingStaffReviewNotes, setIsEditingStaffReviewNotes] = useState(false);
 
   // State for review status (will be used when backend is ready)
   const [selectedReviewStatus, setSelectedReviewStatus] = useState<ReferralReviewStatus>('notReviewed');
@@ -154,10 +158,28 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
     }
   };
 
+  const handleSaveStaffReviewNotes = async () => {
+    if (!selectedReferral) return;
+
+    try {
+      await addReviewNotes.mutateAsync({
+        referralId: selectedReferral.id,
+        notes: staffReviewNotesText.trim(),
+      });
+      toast.success('Staff review notes saved');
+      setIsEditingStaffReviewNotes(false);
+    } catch (error) {
+      toast.error('Failed to save staff review notes');
+      console.error(error);
+    }
+  };
+
   const handleOpenReferralDetails = (referral: Referral) => {
     setSelectedReferral(referral);
     setInternalNotesText(referral.internalNotes || '');
     setIsEditingInternalNotes(false);
+    setStaffReviewNotesText(referral.staff_review_notes || '');
+    setIsEditingStaffReviewNotes(false);
     // TODO: When backend is ready, set the review status from referral data
     // setSelectedReviewStatus(referral.referral_review_status || 'notReviewed');
     setSelectedReviewStatus('notReviewed'); // Default for now
@@ -501,6 +523,71 @@ export default function ReferralsTab({ isAdmin }: ReferralsTabProps) {
                 <p className="text-xs text-muted-foreground mt-2">
                   This status tracks the internal review process and is separate from the referral workflow status.
                 </p>
+              </div>
+
+              {/* Staff Review Notes - Directly below Referral Review Status */}
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Staff Review Notes</Label>
+                </div>
+                {isEditingStaffReviewNotes ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={staffReviewNotesText}
+                      onChange={(e) => setStaffReviewNotesText(e.target.value)}
+                      placeholder="Add staff review notes..."
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setStaffReviewNotesText(selectedReferral.staff_review_notes || '');
+                          setIsEditingStaffReviewNotes(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveStaffReviewNotes}
+                        disabled={addReviewNotes.isPending}
+                      >
+                        {addReviewNotes.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Notes'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedReferral.staff_review_notes ? (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded-md">
+                        {selectedReferral.staff_review_notes}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No staff review notes yet</p>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingStaffReviewNotes(true)}
+                    >
+                      {selectedReferral.staff_review_notes ? 'Edit Notes' : 'Add Notes'}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

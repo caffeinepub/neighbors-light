@@ -2,8 +2,29 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-reorder-the-staff-admin-referral-review-screen-ui-so-the-existing-referral-review-status-field-section-appears-at-the-very-top-of-the-referral-review-screen-i-e-it-is-the-first-field-shown-in-the-review-form-content-area-before-any-other-referral-fields-sections-do-not-add-any-new-fields-do-not-add-or-change-logic-and-do-not-change-any-existing-data",
-      "featureTitle": "Reorder the Staff/Admin Referral review screen UI so the existing `referral_review_status` field/section appears at the very top of the Referral review screen (i.e., it is the first field shown in the review form/content area, before any other referral fields/sections). Do not add any new fields, do not add or change logic, and do not change any existing data.",
+      "featureId": "feature-update-frontend-actor-bindings-types-and-react-query-wiring-so-the-app-can-read-and-update-staff-review-notes-on-referral-records-without-typescript-errors",
+      "featureTitle": "Update frontend actor bindings/types and React Query wiring so the app can read and update `staff_review_notes` on Referral records without TypeScript errors.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "blob-storage@4.0.0",
+        "user-approval@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-84"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-staff-admin-referral-review-screen-ui-in-frontend-src-components-referralstab-tsx-display-a-text-field-for-staff-review-notes-directly-below-the-existing-referral-review-status-section-referral-review-status-and-allow-staff-admin-users-to-edit-and-save-it",
+      "featureTitle": "On the Staff/Admin Referral review screen UI (in `frontend/src/components/ReferralsTab.tsx`), display a text field for `staff_review_notes` directly below the existing `Referral Review Status` section (`referral_review_status`) and allow Staff/Admin users to edit and save it.",
       "files": [
         "frontend/src/components/ReferralsTab.tsx"
       ],
@@ -18,7 +39,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-81"
+        "REQ-85"
       ],
       "confidence": "high"
     }

@@ -522,6 +522,28 @@ export function useAddReferralInternalNotes() {
   });
 }
 
+export function useAddReferralReviewNotes() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      referralId,
+      notes,
+    }: {
+      referralId: bigint;
+      notes: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addReferralReviewNotes(referralId, notes);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['referrals'] });
+      queryClient.invalidateQueries({ queryKey: ['myReferrals'] });
+    },
+  });
+}
+
 export function useApproveReferralAndCreateIntake() {
   const { actor } = useActor();
   const queryClient = useQueryClient();

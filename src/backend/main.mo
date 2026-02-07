@@ -2,7 +2,7 @@ import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Map "mo:core/Map";
-
+import Migration "migration";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -14,7 +14,8 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import UserApproval "user-approval/approval";
 
-
+// Only in this main.mo file, not in migration.mo.
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   let approvalState = UserApproval.initState(accessControlState);
@@ -107,6 +108,7 @@ actor {
     statusHistory : [StatusHistoryEntry];
     lastUpdatedBy : ?Principal;
     convertedIntakeId : ?Nat;
+    staff_review_notes : Text;
   };
 
   type Intake = {
@@ -581,6 +583,7 @@ actor {
       statusHistory = referral.statusHistory;
       lastUpdatedBy = referral.lastUpdatedBy;
       convertedIntakeId = referral.convertedIntakeId;
+      staff_review_notes = referral.staff_review_notes;
     };
   };
 
@@ -646,6 +649,42 @@ actor {
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
+        };
+        referrals.add(referralId, updatedReferral);
+      };
+    };
+  };
+
+  public shared ({ caller }) func addReferralReviewNotes(referralId : Nat, notes : Text) : async () {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only Staff and Admin users can add review notes");
+    };
+
+    switch (referrals.get(referralId)) {
+      case (null) { Runtime.trap("Referral not found") };
+      case (?referral) {
+        let updatedReferral : Referral = {
+          id = referral.id;
+          partnerAgencyName = referral.partnerAgencyName;
+          referrerName = referral.referrerName;
+          clientName = referral.clientName;
+          reason = referral.reason;
+          programRequested = referral.programRequested;
+          client = referral.client;
+          source = referral.source;
+          status = referral.status;
+          assignedStaff = referral.assignedStaff;
+          createdAt = referral.createdAt;
+          updatedAt = Time.now();
+          submittedBy = referral.submittedBy;
+          requestMoreInfo = referral.requestMoreInfo;
+          documents = referral.documents;
+          internalNotes = referral.internalNotes;
+          statusHistory = referral.statusHistory;
+          lastUpdatedBy = ?caller;
+          convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = notes;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -736,6 +775,7 @@ actor {
       statusHistory = [initialStatusHistoryEntry];
       lastUpdatedBy = ?caller;
       convertedIntakeId = null;
+      staff_review_notes = "";
     };
 
     referrals.add(newId, referral);
@@ -781,6 +821,7 @@ actor {
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -866,6 +907,7 @@ actor {
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -910,6 +952,7 @@ actor {
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralStatusChanged, #referral, referralId);
@@ -952,6 +995,7 @@ actor {
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
       };
@@ -1006,6 +1050,7 @@ actor {
           statusHistory = referral.statusHistory;
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralUpdated, #referral, referralId);
@@ -1067,6 +1112,7 @@ actor {
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
           convertedIntakeId = referral.convertedIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
         logActivity(caller, #referralResubmitted, #referral, referralId);
@@ -1111,6 +1157,7 @@ actor {
           statusHistory = referral.statusHistory.concat([newHistoryEntry]);
           lastUpdatedBy = ?caller;
           convertedIntakeId = ?newIntakeId;
+          staff_review_notes = referral.staff_review_notes;
         };
         referrals.add(referralId, updatedReferral);
 
@@ -1918,6 +1965,4 @@ actor {
     };
   };
 };
-
-
 

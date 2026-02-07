@@ -1,38 +1,26 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T00:06:33.620Z",
-  "summary": "REQ-81 appears to be implemented in that `referral_review_status` is described as being displayed first at the top of the referral detail/review UI. However, the diff also introduces new UI and logic around a \"Referral Review Status\" dropdown (including new types and helper functions), which goes beyond the request/constraints (reorder only; no new fields/logic). Additionally, meta/documentation files were updated that were not requested.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-06T07:45:51.682Z",
+  "summary": "Diff adds a new `staff_review_notes : Text` field to the backend `Referral` type, introduces a new `backend/migration.mo` with old/new Referral types including `staff_review_notes`, and updates the frontend referral review UI/hook references to support editing/saving staff review notes. However, the diff summary does not provide direct evidence of the required new Staff/Admin-only backend update method implementation (or its authorization/updatedAt/lastUpdatedBy behavior).",
+  "missing_requirements": [
     {
-      "description": "Introduced a new \"Referral Review Status\" UI control with dropdown options (Not Reviewed/Reviewed/Accepted/Declined) rather than only reordering an existing `referral_review_status` field/section.",
-      "reason": "BuildRequest requires only reordering the existing field/section and explicitly forbids adding new fields. The diff summary describes adding a dropdown selector UI (\"UI ready, pending backend integration\").",
+      "id": "REQ-83",
+      "requirement": "Add a Staff/Admin-only backend method to update `staff_review_notes` for a given Referral, with authorization enforced consistently with existing Staff/Admin referral update operations.",
+      "reason": "The provided `backend/main.mo` excerpt shows the `Referral` type updated to include `staff_review_notes`, but the diff summary does not show any new/modified shared method that updates `staff_review_notes`, nor evidence of Staff/Admin authorization enforcement or updating `updatedAt`/`lastUpdatedBy` as required.",
       "evidence": [
-        "frontend/src/components/ReferralsTab.tsx",
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Added new frontend logic/types/helpers for referral review status (e.g., `ReferralReviewStatus` union type, `getReviewStatusLabel`, `getReviewStatusVariant`).",
-      "reason": "BuildRequest forbids adding or modifying logic/behavior; these helpers and the new type are additional logic not required for a pure UI reorder.",
-      "evidence": [
-        "frontend/src/components/ReferralsTab.tsx"
-      ]
-    },
-    {
-      "description": "Updated repository meta/documentation/state summaries unrelated to the UI reorder (e.g., `frontend-file-summaries.txt`, `project_state.json`).",
-      "reason": "Not requested by REQ-81; these changes do not appear necessary to reorder a UI field.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "project_state.json"
+        "backend/main.mo (truncated excerpt shows only type changes; no update method shown)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/ReferralsTab.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

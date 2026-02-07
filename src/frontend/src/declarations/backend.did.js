@@ -134,6 +134,7 @@ export const Referral = IDL.Record({
   'lastUpdatedBy' : IDL.Opt(IDL.Principal),
   'updatedAt' : Time,
   'assignedStaff' : IDL.Opt(IDL.Principal),
+  'staff_review_notes' : IDL.Text,
   'programRequested' : IDL.Text,
   'internalNotes' : IDL.Opt(IDL.Text),
   'convertedIntakeId' : IDL.Opt(IDL.Nat),
@@ -250,6 +251,7 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addIntakeInternalNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'addReferralInternalNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+  'addReferralReviewNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'approveReferralAndCreateIntake' : IDL.Func(
       [IDL.Nat, IDL.Text],
       [Intake],
@@ -539,6 +541,7 @@ export const idlFactory = ({ IDL }) => {
     'lastUpdatedBy' : IDL.Opt(IDL.Principal),
     'updatedAt' : Time,
     'assignedStaff' : IDL.Opt(IDL.Principal),
+    'staff_review_notes' : IDL.Text,
     'programRequested' : IDL.Text,
     'internalNotes' : IDL.Opt(IDL.Text),
     'convertedIntakeId' : IDL.Opt(IDL.Nat),
@@ -655,6 +658,7 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addIntakeInternalNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'addReferralInternalNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+    'addReferralReviewNotes' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'approveReferralAndCreateIntake' : IDL.Func(
         [IDL.Nat, IDL.Text],
         [Intake],

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 209,
+  "projectStateVersion": 211,
   "summary": "Neighbors Light is a web-based internal operations platform for nonprofit/shelter workflows built on the Internet Computer. It provides Internet Identity authentication and role-based dashboards (Admin, Staff, Partner Agency) to manage partner-submitted referrals, staff-run intake reviews, facility/bed inventory and assignments, administrative access-request approval, and now staff workflows for Case Manager ownership of Intakes plus a staff-only Training + Employment workflow (training checklists, track selection, employment details, and weekly check-ins). The backend is a Motoko canister with access control, CRUD-style endpoints for referrals/intakes/beds/facilities/access-requests, training/employment records, and a Caffeine blob-storage integration for document uploads and blob lifecycle management. The frontend is a React + Tailwind UI using TanStack React Query hooks to call the canister actor and keep cached state consistent via invalidation/refetch.",
   "architectural_notes": [
     "Frontend uses TanStack React Query with custom hooks (useQueries.ts) for each backend operation; mutations invalidate relevant query keys to keep UI consistent.",
@@ -488,6 +488,22 @@
         "REQ-81"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-frontend-actor-bindings-types-and-react-query-wiring-so-the-app-can-read-and-update-staff-review-notes-on-referral-records-without-typescript-errors",
+      "title": "Update frontend actor bindings/types and React Query wiring so the app can read and update `staff_review_notes` on Referral records without TypeScript errors.",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-staff-admin-referral-review-screen-ui-in-frontend-src-components-referralstab-tsx-display-a-text-field-for-staff-review-notes-directly-below-the-existing-referral-review-status-section-referral-review-status-and-allow-staff-admin-users-to-edit-and-save-it",
+      "title": "On the Staff/Admin Referral review screen UI (in `frontend/src/components/ReferralsTab.tsx`), display a text field for `staff_review_notes` directly below the existing `Referral Review Status` section (`referral_review_status`) and allow Staff/Admin users to edit and save it.",
+      "reqIds": [
+        "REQ-85"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -785,6 +801,36 @@
       "id": "AR-56",
       "summary": "Reorder the staff Referral review screen UI so the existing `referral_review_status` field appears at the very top; no new fields, no logic changes, and no data changes.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Add a text field `staff_review_notes` to the Referral record and display it on the Staff/Admin Referral review screen directly below `referral_review_status`, with no other changes (no automation/validation/extra fields).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-58",
+      "summary": "Extend the backend Referral record to include a new text field named `staff_review_notes` that is persisted with each Referral and returned wherever Referral records are returned to Staff/Admin users.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-59",
+      "summary": "Add a Staff/Admin-only backend method to update `staff_review_notes` for a given Referral, with authorization enforced consistently with existing Staff/Admin referral update operations.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "If Referral records are persisted in stable state across canister upgrades in this project, add/adjust the conditional upgrade migration so existing stored Referrals gain a safe default for `staff_review_notes` and upgrades do not trap.",
+      "reqIds": [
+        "REQ-86"
+      ],
       "status": "pending"
     }
   ],

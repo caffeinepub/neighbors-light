@@ -1,50 +1,117 @@
 {
   "kind": "build_request",
-  "title": "Move referral_review_status to the top of the Referral review screen",
+  "title": "Add staff_review_notes to Referral and show it on Referral review screen",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-81",
-      "text": "Reorder the Staff/Admin Referral review screen UI so the existing `referral_review_status` field/section appears at the very top of the Referral review screen (i.e., it is the first field shown in the review form/content area, before any other referral fields/sections). Do not add any new fields, do not add or change logic, and do not change any existing data.",
-      "target": "frontend",
+      "id": "REQ-82",
+      "text": "Extend the backend Referral record to include a new text field named `staff_review_notes` that is persisted with each Referral and returned wherever Referral records are returned to Staff/Admin users.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-9"
         ],
         "quotes": [
-          "Reorder the Referral review screen.\n\nMove the existing field:\n- referral_review_status\n\nSo it appears at the very top of the Referral review screen.\n\nDo not add new fields.\nDo not add logic.\nDo not change existing data."
+          "Add a text field named staff_review_notes to the Referral record."
         ]
       },
       "acceptanceCriteria": [
-        "On the Staff/Admin Referral review UI (referral detail/review view), `referral_review_status` is displayed as the first field/section at the top of the screen/content area before any other referral fields.",
-        "No new fields are added anywhere in the Referral review UI.",
-        "No new conditional behavior, validation, mutations, queries, or backend calls are introduced as part of this change.",
-        "No backend data model, stored values, or API behavior is changed."
+        "Backend Referral type includes `staff_review_notes` (text, nullable/optional allowed).",
+        "Creating a new Referral sets `staff_review_notes` to an empty/default value (e.g., null).",
+        "All backend code paths that construct or update a Referral preserve the existing `staff_review_notes` value unless explicitly changed.",
+        "Staff/Admin referral-fetching methods that return full Referral details include the `staff_review_notes` field in the returned record."
+      ]
+    },
+    {
+      "id": "REQ-83",
+      "text": "Add a Staff/Admin-only backend method to update `staff_review_notes` for a given Referral, with authorization enforced consistently with existing Staff/Admin referral update operations.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-9"
+        ],
+        "quotes": [
+          "Add a text field named staff_review_notes to the Referral record. Display this field on the Referral review screen directly below referral_review_status. Do not make any other changes."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new shared update method exists that accepts (referralId, staff_review_notes) and persists the update on the corresponding Referral.",
+        "The update method traps/rejects when called by a user who is not Staff or Admin (using the same authorization approach as other referral-review operations such as status updates/internal notes).",
+        "Updating `staff_review_notes` updates Referral `updatedAt` and `lastUpdatedBy` consistently with existing referral update patterns.",
+        "No validation rules are added beyond existing authorization and basic referral existence checks (e.g., do not require non-empty text)."
+      ]
+    },
+    {
+      "id": "REQ-84",
+      "text": "Update frontend actor bindings/types and React Query wiring so the app can read and update `staff_review_notes` on Referral records without TypeScript errors.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-9"
+        ],
+        "quotes": [
+          "Add a text field named staff_review_notes to the Referral record. Display this field on the Referral review screen directly below referral_review_status."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Frontend `Referral` type includes `staff_review_notes` after updating generated bindings.",
+        "A new React Query mutation hook is added in `frontend/src/hooks/useQueries.ts` to call the new backend update method for `staff_review_notes`.",
+        "On successful save, relevant referral queries are invalidated/refetched (at minimum `['referrals']`, and any other existing referral caches used by the review UI)."
+      ]
+    },
+    {
+      "id": "REQ-85",
+      "text": "On the Staff/Admin Referral review screen UI (in `frontend/src/components/ReferralsTab.tsx`), display a text field for `staff_review_notes` directly below the existing `Referral Review Status` section (`referral_review_status`) and allow Staff/Admin users to edit and save it.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-9"
+        ],
+        "quotes": [
+          "Display this field on the Referral review screen directly below referral_review_status. Do not make any other changes."
+        ]
+      },
+      "acceptanceCriteria": [
+        "In the Referral details dialog, a labeled text input/textarea for `staff_review_notes` appears immediately after the `Referral Review Status` block and before the next existing section.",
+        "The field initializes from the selected Referral’s `staff_review_notes` value (empty when null/absent).",
+        "A user can edit the notes and explicitly save them; saving calls the new React Query mutation added for `staff_review_notes`.",
+        "No additional fields are added to the review screen, and no existing referral fields/sections are removed or reordered beyond inserting `staff_review_notes` in the required position.",
+        "All user-facing text for this new field is in English (e.g., label “Staff Review Notes”)."
+      ]
+    },
+    {
+      "id": "REQ-86",
+      "text": "If Referral records are persisted in stable state across canister upgrades in this project, add/adjust the conditional upgrade migration so existing stored Referrals gain a safe default for `staff_review_notes` and upgrades do not trap.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-9"
+        ],
+        "quotes": [
+          "Add a text field named staff_review_notes to the Referral record."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Upgrading an existing deployed canister with existing Referrals does not trap due to the new `staff_review_notes` field.",
+        "Existing Referrals receive a sensible default value for `staff_review_notes` (e.g., null/empty) after upgrade."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Frontend change only: do not add new fields, do not add/modify logic, and do not change existing data.",
-    "Do not modify any files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT."
+    "Do not add automation or validation rules for `staff_review_notes`.",
+    "Do not add any other new fields to Referral records.",
+    "Display `staff_review_notes` on the Referral review screen directly below the existing `referral_review_status` section.",
+    "Do not make any other changes outside what is required to store, fetch, display, and save `staff_review_notes`.",
+    "Respect the single-actor backend architecture: keep all Motoko logic in `backend/main.mo`; only introduce/modify migration logic if needed for upgrades."
   ],
   "nonGoals": [
-    "Adding the previously mentioned `next_action` field to Referral records or the Referral review screen.",
-    "Implementing backend persistence or automation for `referral_review_status`.",
-    "Changing any referral workflow status behavior, validation, or role-based access controls."
+    "Do not change the existing referral workflow status system or its UI.",
+    "Do not implement or change the (currently placeholder) backend integration for `referral_review_status` beyond inserting `staff_review_notes` below it.",
+    "Do not change the public referral submission form.",
+    "Do not change referral CSV export behavior or schemas."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

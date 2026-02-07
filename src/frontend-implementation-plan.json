@@ -1,22 +1,44 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Move referral_review_status to top of Staff/Admin Referral review screen",
+  "title": "Display and edit staff_review_notes on Staff/Admin Referral review dialog",
   "requirements": [
     {
-      "id": "REQ-81",
-      "summary": "Reorder the Staff/Admin Referral review UI so the existing referral_review_status section is the first section shown in the Referral review dialog content area.",
+      "id": "REQ-84",
+      "summary": "Update frontend generated bindings/types and React Query wiring to read and update Referral.staff_review_notes without TypeScript errors.",
       "acceptanceCriteria": [
-        "On the Staff/Admin Referral review UI (referral detail/review view), `referral_review_status` is displayed as the first field/section at the top of the screen/content area before any other referral fields.",
-        "No new fields are added anywhere in the Referral review UI.",
-        "No new conditional behavior, validation, mutations, queries, or backend calls are introduced as part of this change.",
-        "No backend data model, stored values, or API behavior is changed."
+        "Frontend `Referral` type includes `staff_review_notes` after updating generated bindings.",
+        "A new React Query mutation hook is added in `frontend/src/hooks/useQueries.ts` to call the new backend update method for `staff_review_notes`.",
+        "On successful save, relevant referral queries are invalidated/refetched (at minimum `['referrals']`, and any other existing referral caches used by the review UI)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Update generated actor/type definitions so the `Referral` type includes `staff_review_notes` and the backend interface includes the new staff/admin method for updating it, ensuring no TypeScript errors in the app."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query mutation hook to update `staff_review_notes` for a referral via the backend actor, and invalidate/refetch cached referral queries on success (at minimum `['referrals']`, plus any other referral caches used by the review UI such as `['myReferrals']`)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-85",
+      "summary": "On the Staff/Admin Referral review dialog, insert a Staff Review Notes text area directly below Referral Review Status and allow explicit save.",
+      "acceptanceCriteria": [
+        "In the Referral details dialog, a labeled text input/textarea for `staff_review_notes` appears immediately after the `Referral Review Status` block and before the next existing section.",
+        "The field initializes from the selected Referral’s `staff_review_notes` value (empty when null/absent).",
+        "A user can edit the notes and explicitly save them; saving calls the new React Query mutation added for `staff_review_notes`.",
+        "No additional fields are added to the review screen, and no existing referral fields/sections are removed or reordered beyond inserting `staff_review_notes` in the required position.",
+        "All user-facing text for this new field is in English (e.g., label “Staff Review Notes”)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/ReferralsTab.tsx",
           "operation": "modify",
-          "description": "In the Staff/Admin referral details Dialog, move the existing 'Referral Review Status' block (the current referral_review_status section) to be the first rendered section directly under the Dialog container/top of scrollable content, before any other referral fields/sections. Keep all existing UI elements and handlers unchanged; only reorder layout/JSX."
+          "description": "In the Referral details dialog, add a new \"Staff Review Notes\" section (textarea + explicit Save action) positioned directly below the existing \"Referral Review Status\" block; initialize local state from `selectedReferral.staff_review_notes` (fallback to empty string), and on save call the new `staff_review_notes` mutation hook and keep all other existing sections/ordering unchanged."
         }
       ]
     }

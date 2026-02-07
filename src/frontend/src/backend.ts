@@ -159,6 +159,7 @@ export interface Referral {
     lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
+    staff_review_notes: string;
     programRequested: string;
     internalNotes?: string;
     convertedIntakeId?: bigint;
@@ -308,6 +309,7 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addIntakeInternalNotes(intakeId: bigint, notes: string): Promise<void>;
     addReferralInternalNotes(referralId: bigint, notes: string): Promise<void>;
+    addReferralReviewNotes(referralId: bigint, notes: string): Promise<void>;
     approveReferralAndCreateIntake(referralId: bigint, intakeDetails: string): Promise<Intake>;
     approveRequest(requestId: bigint, userId: Principal): Promise<void>;
     archiveBed(bedId: bigint): Promise<void>;
@@ -499,6 +501,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.addReferralInternalNotes(arg0, arg1);
+            return result;
+        }
+    }
+    async addReferralReviewNotes(arg0: bigint, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addReferralReviewNotes(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addReferralReviewNotes(arg0, arg1);
             return result;
         }
     }
@@ -1588,6 +1604,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
     lastUpdatedBy: [] | [Principal];
     updatedAt: _Time;
     assignedStaff: [] | [Principal];
+    staff_review_notes: string;
     programRequested: string;
     internalNotes: [] | [string];
     convertedIntakeId: [] | [bigint];
@@ -1608,6 +1625,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
     lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
+    staff_review_notes: string;
     programRequested: string;
     internalNotes?: string;
     convertedIntakeId?: bigint;
@@ -1629,6 +1647,7 @@ function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uin
         lastUpdatedBy: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.lastUpdatedBy)),
         updatedAt: value.updatedAt,
         assignedStaff: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.assignedStaff)),
+        staff_review_notes: value.staff_review_notes,
         programRequested: value.programRequested,
         internalNotes: record_opt_to_undefined(from_candid_opt_n13(_uploadFile, _downloadFile, value.internalNotes)),
         convertedIntakeId: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.convertedIntakeId)),

@@ -70,6 +70,7 @@ export interface Referral {
     lastUpdatedBy?: Principal;
     updatedAt: Time;
     assignedStaff?: Principal;
+    staff_review_notes: string;
     programRequested: string;
     internalNotes?: string;
     convertedIntakeId?: bigint;
@@ -208,6 +209,7 @@ export enum Variant_pending_approved_rejected {
 export interface backendInterface {
     addIntakeInternalNotes(intakeId: bigint, notes: string): Promise<void>;
     addReferralInternalNotes(referralId: bigint, notes: string): Promise<void>;
+    addReferralReviewNotes(referralId: bigint, notes: string): Promise<void>;
     approveReferralAndCreateIntake(referralId: bigint, intakeDetails: string): Promise<Intake>;
     approveRequest(requestId: bigint, userId: Principal): Promise<void>;
     archiveBed(bedId: bigint): Promise<void>;
